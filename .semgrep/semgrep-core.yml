@@ -1,0 +1,186 @@
+rules:
+
+  # ── AG-CORE-002: .Wait() / .Result bloquean el thread (C#) ──────────────────
+  - id: ag-core-002-task-wait
+    pattern: $TASK.Wait()
+    message: >
+      AG-CORE-002: .Wait() bloquea el thread y puede causar deadlock.
+      Reemplazar con: await $TASK
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-002
+      fix: "Reemplazar .Wait() con await"
+
+  - id: ag-core-002-task-result
+    patterns:
+      - pattern: $TASK.Result
+      - pattern-not: |
+          var $X = $TASK.IsCompleted ? $TASK.Result : ...
+    message: >
+      AG-CORE-002: .Result bloquea el thread si la tarea no completó.
+      Reemplazar con: await $TASK
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-002
+      fix: "Reemplazar .Result con await"
+
+  # ── AG-CORE-002 equivalente JS/TS: Promise sin await ni .catch ──────────────
+  - id: ag-core-002-unhandled-promise
+    pattern: |
+      $FUNC(...).then($X => ...)
+    pattern-not: |
+      $FUNC(...).then($X => ...).catch(...)
+    message: >
+      AG-CORE-002: Promise con .then() sin .catch(). Los errores serán silenciados.
+      Usar await con try/catch, o agregar .catch() explícito.
+    languages: [javascript, typescript]
+    severity: WARNING
+    metadata:
+      policy: AG-CORE-002
+
+  # ── AG-CORE-003: async void prohibido (C#) ──────────────────────────────────
+  - id: ag-core-003-async-void
+    pattern: async void $METHOD(...)
+    message: >
+      AG-CORE-003: async void no permite await ni captura de excepciones.
+      Cambiar a: async Task $METHOD(...)
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-003
+      fix: "Cambiar async void por async Task"
+
+  # ── AG-CORE-004: Credenciales hardcodeadas ───────────────────────────────────
+  - id: ag-core-004-hardcoded-password-python
+    patterns:
+      - pattern: $VAR = "$VALUE"
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i)^(password|passwd|pwd|secret|api_key|apikey|api_secret|token|auth_token|access_token|private_key)$
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^.{6,}$
+    message: >
+      AG-CORE-004: CRITICAL — posible credencial hardcodeada en $VAR.
+      Mover a variable de entorno: os.getenv("$VAR") o settings.$VAR
+    languages: [python]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-004
+
+  - id: ag-core-004-hardcoded-password-js
+    patterns:
+      - pattern: |
+          const $VAR = "$VALUE"
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i)(password|passwd|secret|apiKey|api_key|apiSecret|token|authToken|privateKey)
+      - metavariable-regex:
+          metavariable: $VALUE
+          regex: ^.{6,}$
+    message: >
+      AG-CORE-004: CRITICAL — posible credencial hardcodeada en $VAR.
+      Mover a variable de entorno: process.env.$VAR
+    languages: [javascript, typescript]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-004
+
+  - id: ag-core-004-hardcoded-connstring
+    patterns:
+      - pattern: $VAR = "Server=$HOST;..."
+      - metavariable-regex:
+          metavariable: $VAR
+          regex: (?i)(connection|connectionstring|connstr|dbconnection)
+    message: >
+      AG-CORE-004: CRITICAL — connection string hardcodeado.
+      Mover a appsettings.json o variable de entorno.
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-004
+
+  # ── AG-CORE-001: Catch vacío (Python) ────────────────────────────────────────
+  - id: ag-core-001-empty-except-python
+    pattern: |
+      try:
+          ...
+      except:
+          pass
+    message: >
+      AG-CORE-001: Catch vacío silencia todos los errores.
+      Especificar el tipo de excepción y loguear: except Exception as e: logger.error(...)
+    languages: [python]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-001
+
+  - id: ag-core-001-empty-except-typed
+    pattern: |
+      try:
+          ...
+      except $EX:
+          pass
+    message: >
+      AG-CORE-001: Catch vacío (solo pass). Loguear la excepción: logger.error("...", exc_info=True)
+    languages: [python]
+    severity: WARNING
+    metadata:
+      policy: AG-CORE-001
+
+  # ── AG-CORE-001: Catch vacío (C#) ────────────────────────────────────────────
+  - id: ag-core-001-empty-catch-csharp
+    pattern: |
+      try {
+          ...
+      }
+      catch (...) {}
+    message: >
+      AG-CORE-001: Catch vacío silencia la excepción.
+      Loguear siempre: catch (Exception ex) { _logger.LogError(ex, "..."); }
+    languages: [csharp]
+    severity: ERROR
+    metadata:
+      policy: AG-CORE-001
+
+  # ── AG-CORE-006: console.log en archivos de producción (JS/TS) ───────────────
+  - id: ag-core-006-console-log
+    patterns:
+      - pattern: console.log(...)
+      - pattern-not-inside: |
+          // eslint-disable-next-line no-console
+          ...
+    message: >
+      AG-CORE-006: console.log no debe llegar a producción.
+      Usar un logger estructurado (pino, winston) con niveles y contexto.
+    languages: [javascript, typescript]
+    severity: WARNING
+    paths:
+      exclude:
+        - "**/*.test.ts"
+        - "**/*.test.js"
+        - "**/*.spec.ts"
+        - "**/*.spec.js"
+        - "**/scripts/**"
+        - "next.config.*"
+    metadata:
+      policy: AG-CORE-006
+
+# ── Uso ──────────────────────────────────────────────────────────────────────
+#
+# Escanear el proyecto actual:
+#   semgrep --config path/to/semgrep-core.yml .
+#
+# Escanear solo archivos staged (pre-commit):
+#   semgrep --config path/to/semgrep-core.yml $(git diff --staged --name-only)
+#
+# En CI (GitHub Actions):
+#   - uses: returntocorp/semgrep-action@v1
+#     with:
+#       config: .semgrep/semgrep-core.yml
+#
+# Para cobertura completa de secretos, agregar también:
+#   semgrep --config p/secrets .
+#   gitleaks detect --source .

@@ -1,0 +1,783 @@
+﻿# Antigravity AI v3 -- Reglas para AI assistants
+# Proyecto: gestor_personal | Tipo: webapp
+
+Leer siempre .ai/STATE.md antes de responder.
+Seguir politicas AG-CORE del proyecto.
+Maximo 3 archivos por sesion de cambios.
+No agregar console.log ni print() en codigo de produccion.
+No dejar catch vacios -- siempre loguear el error.
+
+<!-- Los packs instalados agregan sus reglas a continuacion -->
+## Pack: web-comercial (instalado: 2026-06-22)
+
+# Pack: web-comercial â€” Reglas EspecÃ­ficas
+# Aplica cuando projectType = "web-comercial" o se detecta Next.js + cliente final.
+# Cubre: sitios para restaurantes, hoteles, tiendas, empresas, servicios.
+
+---
+
+## WC-RULE-01: Stack obligatorio
+
+- Framework: Next.js 15 (App Router)
+- Estilos: Tailwind CSS â€” nunca CSS inline ni styled-components
+- TipografÃ­a: Google Fonts via next/font â€” nunca CDN link externo
+- ImÃ¡genes: next/image siempre â€” nunca <img> directo
+- Iconos: lucide-react o heroicons â€” nunca SVGs inline en JSX
+
+## WC-RULE-02: Estructura de carpetas
+
+```
+src/
+  app/
+    layout.tsx          â† metadata global, fuentes, analytics
+    page.tsx            â† landing principal
+    (secciones)/        â† rutas adicionales si aplica
+  components/
+    ui/                 â† botones, cards, inputs reutilizables
+    sections/           â† Hero, About, Menu, Gallery, Contact, etc.
+    layout/             â† Navbar, Footer
+  lib/
+    utils.ts            â† cn(), formatPrice(), etc.
+  data/
+    content.ts          â† TODO el texto del sitio en un solo archivo
+```
+
+Regla crÃ­tica: TODO el contenido editable va en src/data/content.ts.
+El cliente cambia texto ahÃ­, no en los componentes.
+
+## WC-RULE-03: Secciones segÃºn tipo de cliente
+
+### Restaurante
+Obligatorias: Hero, Menu, Gallery, About, Contact, Footer
+Opcionales: Reservas, Delivery, Testimonials, Hours
+
+### Hotel / Hospedaje
+Obligatorias: Hero, Rooms, Amenities, Gallery, Booking, Contact, Footer
+Opcionales: About, Testimonials, Location, Policies
+
+### Tienda / E-commerce simple
+Obligatorias: Hero, Products, Features, About, Contact, Footer
+Opcionales: Testimonials, FAQ, Shipping info
+
+### Empresa / Corporativo
+Obligatorias: Hero, Services, About, Team, Contact, Footer
+Opcionales: Portfolio, Testimonials, Clients, FAQ
+
+### App de servicios (plomero, electricista, etc.)
+Obligatorias: Hero, Services, HowItWorks, About, Contact, Footer
+Opcionales: Testimonials, FAQ, Coverage area
+
+## WC-RULE-04: DiseÃ±o visual
+
+- Paleta: definir mÃ¡ximo 3 colores (primary, secondary, neutral) en tailwind.config.ts
+- Fuentes: mÃ¡ximo 2 (una para headings, una para body)
+- Modo oscuro: solo si el cliente lo pide explÃ­citamente â€” default LIGHT
+- Responsive obligatorio: mobile-first. Probar en 375px, 768px, 1280px
+- Animaciones: solo Framer Motion o CSS transitions simples. Sin GSAP.
+- ImÃ¡genes hero: siempre con overlay semitransparente para legibilidad del texto
+
+## WC-RULE-05: Performance (Core Web Vitals)
+
+- LCP < 2.5s: imagen hero con priority={true} en next/image
+- CLS = 0: definir width/height en todas las imÃ¡genes
+- FID < 100ms: no bloquear el thread principal en el render inicial
+- Fonts: preload via next/font, nunca @import en CSS
+- No cargar librerÃ­as pesadas en el bundle principal (mapas, charts: dynamic import)
+
+## WC-RULE-06: SEO obligatorio
+
+En cada page.tsx exportar metadata:
+```typescript
+export const metadata: Metadata = {
+  title: "Nombre del negocio â€” Ciudad | Tipo de negocio",
+  description: "DescripciÃ³n de 150-160 chars con keyword principal",
+  openGraph: { title, description, images },
+}
+```
+- Alt text en TODAS las imÃ¡genes
+- Headings en orden: un solo H1 por pÃ¡gina, H2 para secciones
+- Schema markup (JSON-LD) para restaurantes/hoteles/negocios locales
+
+## WC-RULE-07: Formulario de contacto
+
+- Siempre usar React Hook Form + Zod para validaciÃ³n
+- Backend: Resend o Nodemailer para emails â€” nunca exponer credenciales
+- Variables sensibles: solo en .env.local, nunca hardcodeadas
+- Feedback visual: loading state + success + error en el botÃ³n de envÃ­o
+
+## WC-RULE-08: Deploy
+
+- Plataforma: Vercel (default) o Netlify
+- Variables de entorno: configurar en el panel del proveedor, no en el repo
+- Dominio custom: documentar pasos en .ai/HANDOFF_PLAN_FOR_OTHER_AI.md
+- Checklist pre-deploy: lighthouse score > 90, sin console.errors, favicon configurado
+
+## WC-RULE-09: Entrega al cliente
+
+Antes de cerrar el proyecto:
+1. Crear README-CLIENTE.md con instrucciones para editar contenido
+2. Documentar cÃ³mo cambiar: textos, imÃ¡genes, colores, menÃº de nav
+3. Exportar credenciales de deploy en documento separado (nunca en el repo)
+4. Screenshot de cada secciÃ³n en desktop y mobile
+
+
+## Pack: quality (instalado: 2026-06-22)
+
+# Pack: quality â€” Reglas de Calidad de Codigo
+
+## Relacion con Antigravity
+
+ESLint/Prettier = enforcement automatico de PatternAgent en cada save/commit.
+ReviewAgent = razonamiento sobre el contexto.
+PolicyAgent = codigos AG-CORE y AG-stack.
+La cadena correcta: Prettier formatea â†’ ESLint detecta â†’ PolicyAgent razona â†’ ReviewAgent valida.
+
+---
+
+## QL-RULE-01: Prettier â€” Fuente Unica de Formato
+
+Prettier formatea. Las IAs NO deben cambiar indentacion, comillas ni punto y coma manualmente.
+Si hay conflicto entre lo que una IA escribe y Prettier: Prettier gana siempre.
+Configuracion en proyecto: prettier.config.js o .prettierrc.json (ver configs/).
+No usar reglas de ESLint que conflicten con Prettier â€” usar eslint-config-prettier.
+
+## QL-RULE-02: ESLint â€” Solo Errores que Prettier No Cubre
+
+ESLint para logica, no para formato.
+Reglas de formato en ESLint: desactivar con eslint-config-prettier.
+Reglas de logica a mantener:
+  - no-unused-vars / @typescript-eslint/no-unused-vars
+  - no-console (produccion)
+  - react-hooks/exhaustive-deps (React)
+  - @typescript-eslint/no-explicit-any
+  - security/* (eslint-plugin-security)
+
+## QL-RULE-03: EditorConfig â€” Base Unificada
+
+.editorconfig en la raiz del proyecto.
+Aplica a: VS Code, Cursor, Rider, Notepad++, cualquier editor.
+Define: indent_style, indent_size, end_of_line, charset, trim_trailing_whitespace.
+Es la base que todos los editores y todas las IAs deben respetar.
+
+## QL-RULE-04: Python â€” Ruff en lugar de Black + Flake8
+
+Para Python: usar Ruff (reemplaza Black + Flake8 + isort en un solo tool).
+Ruff es 100x mas rapido que sus equivalentes separados.
+Configurar en pyproject.toml:
+  [tool.ruff]
+  line-length = 88
+  select = ["E", "F", "I", "N", "S", "UP"]
+
+## QL-RULE-05: Integracion con Antigravity
+
+Al ejecutar Run-QualityCheck:
+  - Si hay errores ESLint: registrar en AI_TASK_STATE.md como MEDIUM si son warnings, HIGH si son errors.
+  - Si hay violaciones Prettier: las IAs NO deben arreglarlas manualmente â€” correr prettier --write.
+  - Violaciones de no-console: registrar como TODO_AI: AG-CORE-006 en el codigo.
+
+Al ejecutar Close-Session:
+  - Run-QualityCheck es parte del cierre si el pack quality esta instalado.
+  - Si hay errores HIGH sin resolver: Close-Session los muestra como advertencia.
+
+## QL-RULE-06: /simplify Skill + Quality Pack
+
+Cuando usas /simplify (Claude Code skill):
+  1. /simplify revisa el codigo cambiado.
+  2. Despues de aceptar sugerencias: correr prettier --write.
+  3. Despues de prettier: correr eslint --fix (solo reglas auto-corregibles).
+  4. Lo que ESLint no puede auto-corregir: agregar TODO_AI: en el codigo.
+Orden obligatorio: /simplify â†’ prettier â†’ eslint --fix â†’ revisar manualmente lo restante.
+
+
+## Pack: testing (instalado: 2026-06-22)
+
+# Pack: testing â€” Reglas de Testing para Software Comercial
+# Aplica a: cualquier proyecto que va a produccion
+# Herramientas: Vitest | Jest | pytest | xUnit | Playwright | Cypress
+
+---
+
+## TEST-RULE-01: Que testear (y que no)
+
+TESTEAR â€” logica que puede fallar sin que sea obvio:
+- Calculos de negocio (precios, descuentos, impuestos, fechas)
+- Validaciones de entrada (que acepta, que rechaza)
+- Transformaciones de datos (que entra, que sale)
+- Edge cases documentados como bugs anteriores
+- Integraciones criticas (pagos, emails, auth)
+
+NO TESTEAR â€” infraestructura y framework:
+- Que React renderiza un div con cierto texto
+- Que el ORM guarda en la DB (confiar en el ORM)
+- Que Next.js hace routing (confiar en el framework)
+- Que un endpoint devuelve 200 (eso es el minimo esperado)
+
+Ratio objetivo: 70% unit + 20% integration + 10% e2e.
+
+## TEST-RULE-02: Unit tests â€” estructura y calidad
+
+Un test = un comportamiento, no una implementacion.
+Arrange / Act / Assert sin excepcion.
+Nombre: `should_[comportamiento]_when_[condicion]`
+
+```typescript
+// BIEN â€” testea comportamiento
+it('should apply 10% discount when order total exceeds 100', () => {
+  const order = createOrder({ items: [{ price: 120, qty: 1 }] })
+  const discounted = applyDiscounts(order)
+  expect(discounted.total).toBe(108)
+})
+
+// MAL â€” testea implementacion interna (fragil)
+it('should call calculateDiscount with 0.1', () => {
+  const spy = jest.spyOn(discountModule, 'calculateDiscount')
+  applyDiscounts(order)
+  expect(spy).toHaveBeenCalledWith(0.1)
+})
+```
+
+Mocks solo en la frontera del sistema (HTTP externo, DB, filesystem, tiempo).
+Nunca mockear codigo propio â€” si necesitas mockearlo, el diseno esta acoplado.
+
+## TEST-RULE-03: Integration tests â€” la capa mas valiosa
+
+Testear el contrato entre capas: API â†’ Service â†’ DB.
+Usar DB real (test container o SQLite en memoria) â€” nunca mockear la DB.
+Limpiar datos entre tests â€” no compartir estado entre pruebas.
+
+```python
+# FastAPI + pytest
+@pytest.fixture(autouse=True)
+async def clean_db(db: AsyncSession):
+    yield
+    await db.rollback()
+
+async def test_create_order_reduces_stock(client, db):
+    product = await create_product(db, stock=10)
+    response = await client.post("/orders", json={"product_id": str(product.id), "qty": 3})
+    assert response.status_code == 201
+    updated = await db.get(Product, product.id)
+    assert updated.stock == 7
+```
+
+## TEST-RULE-04: Coverage â€” targets reales
+
+Logica de negocio (services/, lib/): > 80%
+API endpoints: > 60%
+UI components: > 40% (solo los con logica)
+Coverage < 60% en modulo nuevo: WARNING en PR.
+No perseguir 100% â€” el ultimo 20% cuesta mas que lo que aporta.
+
+## TEST-RULE-05: E2E â€” solo flujos criticos
+
+E2E son caros de mantener. Solo para:
+- El flujo de compra completo (si hay pagos)
+- El flujo de registro y primer login
+- El flujo del feature mas importante del producto
+- Flujos que se rompieron en produccion antes
+
+```typescript
+// Playwright â€” flujo critico
+test('user can complete checkout', async ({ page }) => {
+  await page.goto('/productos')
+  await page.click('[data-testid="producto-camisa"]')
+  await page.click('[data-testid="agregar-al-carrito"]')
+  await page.goto('/carrito')
+  await expect(page.locator('[data-testid="item-count"]')).toHaveText('1')
+})
+```
+
+## TEST-RULE-06: Por stack
+
+### React / Next.js
+```bash
+npm install -D vitest @testing-library/react @testing-library/user-event @playwright/test
+```
+No testear CSS, no testear que un elemento existe. Testear comportamiento.
+
+### FastAPI / Python
+```bash
+pip install pytest pytest-asyncio httpx
+```
+`conftest.py` para fixtures compartidas. DB real en tests de integracion.
+
+### WinForms / .NET
+Separar logica de negocio de Forms antes de testear.
+Testear los servicios con xUnit, no los Forms directamente.
+
+## TEST-RULE-07: Tests en CI (no opcionales)
+
+Tests corren en cada push. Sin CI = tests que nadie corre.
+Si los tests fallan: el PR no se puede mergear.
+
+```yaml
+# .github/workflows/ci.yml â€” minimo viable
+- name: Run tests
+  run: npm test -- --coverage
+```
+
+
+## Pack: security (instalado: 2026-06-22)
+
+# Pack: security â€” Reglas de Seguridad Universales
+# Herramientas integradas: Semgrep (SAST) + Gitleaks (secrets detection)
+# Scripts: Run-SecurityScan | Hooks: pre-commit con gitleaks
+# Relacion con agentes: SecurityAgent (razonamiento) + PolicyAgent (patrones)
+
+---
+
+## SEC-RULE-01: Credenciales y Secretos
+
+Credenciales, tokens y API keys NUNCA en codigo fuente.
+NUNCA en texto plano en archivos de configuracion sin cifrar.
+Usar variables de entorno (.env) o secret managers del sistema.
+Windows: DPAPI (ProtectedData.Protect) para persistencia local.
+Linux/Mac: libsecret o keyring del sistema.
+Al detectar credencial en codigo: ERROR CRITICO, no continuar.
+
+## SEC-RULE-02: Comunicaciones
+
+HTTPS obligatorio para toda comunicacion con APIs externas.
+Verificar certificados SSL. No ignorar errores de certificado en produccion.
+No usar HTTP para datos sensibles.
+Timeout en todas las llamadas HTTP: nunca indefinido.
+
+## SEC-RULE-03: Inputs y Validacion
+
+Validar TODOS los inputs en la capa de entrada.
+Path traversal: Path.GetFileName() / os.path.basename() antes de usar rutas del usuario.
+SQL: parametros siempre. Nunca concatenacion de strings.
+HTML: sanitizar antes de renderizar si viene de input del usuario.
+Numeros: Math.Clamp() o equivalente. Nunca confiar en rangos del usuario.
+
+## SEC-RULE-04: Logging Seguro
+
+NUNCA loguear: passwords, tokens, cookies, API keys, datos personales (PII).
+Si se logea un error de autenticacion: loguear solo el identificador, no el secreto.
+Logs de produccion: sin stack traces completos expuestos al usuario final.
+
+## SEC-RULE-05: Memoria y Limpieza
+
+Limpiar secretos de memoria cuando ya no se necesiten.
+No depender del GC para limpiar datos sensibles (puede tardar).
+C#: string secret = ""; o SecureString si aplica.
+Python: del variable despues de usar secreto.
+
+## SEC-RULE-06: Dependencias â€” CVE Scanning
+
+No agregar dependencias con vulnerabilidades conocidas.
+Versiones pinned â€” nunca ranges abiertos (^, ~) en produccion critica.
+
+CVE scanning automatico (Run-SecurityScan, parte del scan de seguridad):
+  npm audit    â†’ si existe package-lock.json (Node)
+  pip-audit    â†’ si existe requirements.txt o pyproject.toml (Python)
+  osv-scanner  â†’ fallback multi-ecosistema (Go, Rust, Java, otros lockfiles)
+
+Run-SecurityScan -SkipCve  â†’ omite CVE scanning (usado en el hook pre-commit
+para mantenerlo rapido; el CVE scan completo corre en CI o manualmente).
+
+Vulnerabilidades CRITICAL/ERROR encontradas â†’ AG-CORE-004-equivalente: resolver
+(actualizar version o reemplazar dependencia) antes de continuar.
+
+---
+
+## SEC-RULE-07: Semgrep â€” SAST Automatico
+
+Semgrep es el linter de seguridad. SecurityAgent es el razonamiento.
+La cadena: Semgrep detecta patrones â†’ SecurityAgent razona sobre contexto â†’ PolicyAgent registra.
+
+Instalacion (una vez, global):
+  pip install semgrep
+  O descargar binario: https://semgrep.dev/docs/getting-started/
+
+Config del proyecto: packs/security/configs/.semgrep.yml (copiar a raiz).
+
+Ejecutar en sesion:
+  Run-SecurityScan              # Semgrep + Gitleaks
+  Run-SecurityScan -SemgrepOnly # Solo Semgrep
+  Run-SecurityScan -Quick       # Solo reglas rapidas (pre-commit)
+
+Resultados: van a AI_TASK_STATE.md seccion [SEC] de PROJECT_CONTEXT.md.
+
+Reglas de Semgrep activas por stack:
+  Core: p/secrets, p/owasp-top-ten
+  .NET: p/csharp (si disponible)
+  Python: p/python, p/flask, p/django
+  JS/TS: p/javascript, p/typescript, p/react
+  Security extra: p/jwt, p/sql-injection
+
+## SEC-RULE-08: Gitleaks â€” Deteccion de Secretos
+
+Gitleaks escanea el historial de git buscando credenciales, API keys, tokens.
+Es el guardian que evita que una IA suba accidentalmente un secret al repo.
+
+Instalacion:
+  winget install gitleaks  # Windows
+  brew install gitleaks    # Mac
+  # O descargar binario: https://github.com/gitleaks/gitleaks
+
+Como hook pre-commit (setup-git-hooks.ps1 lo instala automaticamente):
+  - Bloquea el commit si encuentra un secreto.
+  - No se puede saltear sin -v flag (que queda en el historial).
+
+Como scan manual:
+  Run-SecurityScan -GitleaksOnly  # Escanea todo el historial
+  Run-SecurityScan -GitleaksStaged  # Solo archivos en stage
+
+Config: packs/security/configs/.gitleaks.toml (copiar a raiz).
+
+Si Gitleaks da un falso positivo:
+  1. Verificar que realmente es falso positivo.
+  2. Agregar en .gitleaks.toml bajo [allowlist].
+  3. Documentar el allowlist en AI_DECISIONS.md con razon.
+  NUNCA agregar al allowlist sin documentar por que.
+
+## SEC-RULE-09: Relacion /security-review + Herramientas
+
+Flujo correcto antes de una sesion de seguridad:
+  1. Run-SecurityScan  â†’ detecta problemas automaticos (Semgrep + Gitleaks).
+  2. Registrar issues en AI_TASK_STATE.md.
+  3. /security-review  â†’ Claude razona sobre los issues en contexto.
+  4. SecurityAgent     â†’ aplica fixes con las reglas del pack.
+  5. Run-SecurityScan de nuevo â†’ verificar que issues se resolvieron.
+
+/security-review lee el diff de la rama.
+Semgrep lee el codigo actual.
+Son complementarios, no redundantes.
+
+## SEC-RULE-10: shadcn/ui y Magic UI â€” Seguridad
+
+shadcn/ui y Magic UI son librerias de componentes. Sin SSR server actions custom â†’ bajo riesgo.
+Con Server Actions (Next.js): validar inputs con Zod en el server. Nunca confiar en el cliente.
+Con fetch en cliente: verificar que no se expongan secrets en NEXT_PUBLIC_.
+Con formularios shadcn: validar tanto en cliente (UX) como en servidor (seguridad).
+
+## SEC-RULE-11: DAST â€” Pruebas Dinamicas (RedTeamAgent)
+
+Semgrep y Gitleaks son SAST: analizan codigo estatico, sin ejecutar nada.
+DAST complementa atacando un objetivo en ejecucion (localhost/staging) para
+confirmar que las defensas aguantan en runtime. Lo ejecuta RedTeamAgent.
+
+GUARDARRAIL (no negociable, ver agents/active/RedTeamAgent.md):
+  - Solo localhost/staging autorizado explicitamente por el usuario.
+  - NUNCA produccion, dominios de terceros, ni IPs fuera del scope confirmado.
+  - Sin objetivo autorizado â†’ RedTeamAgent cae a modo solo-estatico (no ejecuta nada).
+
+Herramientas y configs (packs/security/configs/):
+  nuclei      â†’ escaneo de vulnerabilidades por plantillas (CVE + misconfig).
+                Config: nuclei.config.yaml
+                Uso:    nuclei -u <target> -config packs/security/configs/nuclei.config.yaml
+  OWASP ZAP   â†’ baseline scan pasivo (proxy de trafico, no activo agresivo).
+                Config: zap-baseline.conf
+                Uso:    zap-baseline.py -t <target> -c packs/security/configs/zap-baseline.conf
+  sqlmap      â†’ deteccion de SQL injection (risk=1, level=1, sin --dump masivo).
+                Config: sqlmap.conf
+                Uso:    sqlmap -c packs/security/configs/sqlmap.conf -u <target-url>
+
+Resultados van a .ai/redteam/ (no se commitean â€” agregar a .gitignore del proyecto).
+
+Flujo blue/red (ver workflows/security-audit.json):
+  1. SecurityAgent corrige (SAST + manual).
+  2. RedTeamAgent ataca el mismo vector con las herramientas de arriba.
+  3. SecurityAgent re-valida con Run-SecurityScan.
+  Repetir hasta que RedTeamAgent no encuentre el vector original.
+
+
+
+## Pack: database (instalado: 2026-06-22)
+
+# Pack: database â€” Reglas de Base de Datos
+# Aplica a: cualquier proyecto con persistencia (SQL, NoSQL, ORMs)
+# Herramientas: Prisma | Alembic | EF Core Migrations | SQLAlchemy | TypeORM
+
+---
+
+## DB-RULE-01: Migrations desde el dia 1
+
+Prisma, Alembic o EF Core â€” nunca crear tablas manualmente en produccion.
+Primera migration: en el mismo commit que el primer modelo.
+Rollback de migration probado antes de aplicar en produccion.
+
+```bash
+# Prisma
+npx prisma migrate dev --name "init"
+
+# Alembic (FastAPI)
+alembic revision --autogenerate -m "init"
+alembic upgrade head
+
+# EF Core
+dotnet ef migrations add Init
+dotnet ef database update
+```
+
+Nunca hacer `DROP COLUMN` directamente. Proceso correcto:
+1. Marcar columna como deprecated en codigo
+2. Migrar datos a nueva columna (si aplica)
+3. Deploy y verificar que nada usa la columna vieja
+4. Crear migration que hace el DROP
+
+## DB-RULE-02: Schema design que no se arrepiente despues
+
+Soft delete por defecto en entidades de negocio: `deleted_at TIMESTAMP NULL`.
+Timestamps en TODAS las tablas: `created_at`, `updated_at` (auto-managed por ORM).
+IDs expuestos al cliente: UUID v4 (no predecibles, no enumerables).
+IDs internos: Serial/autoincrement (performance en JOINs, no exponer al exterior).
+Nunca usar email como primary key â€” cambia, y el cambio arruina toda la DB.
+
+```prisma
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  deletedAt DateTime?   // soft delete
+}
+```
+
+## DB-RULE-03: Queries seguros contra injection y N+1
+
+SQL injection: parametros siempre, nunca concatenacion de strings.
+```python
+# MAL - SQL injection posible
+cursor.execute(f"SELECT * FROM users WHERE email = '{email}'")
+
+# BIEN
+cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
+```
+
+N+1 queries: detectar y prevenir con eager loading.
+```typescript
+// MAL â€” N+1: 1 query para posts + N queries para author
+const posts = await Post.findAll()
+for (const post of posts) {
+  const author = await post.getAuthor() // N queries extra
+}
+
+// BIEN â€” 1 query con JOIN
+const posts = await Post.findAll({ include: [{ model: User, as: 'author' }] })
+```
+
+Paginacion obligatoria en cualquier listado: maximo 100 items por pagina por defecto.
+`SELECT *` prohibido en produccion â€” listar campos explicitos.
+
+## DB-RULE-04: Indices que importan
+
+Indice en todo campo que aparece en WHERE o ORDER BY frecuente.
+Foreign keys siempre indexadas (muchos ORMs no lo hacen automaticamente).
+Indices compuestos para queries con multiples condiciones frecuentes.
+No indexar campos con baja cardinalidad (boolean, status con 2-3 valores).
+
+```sql
+-- Indices criticos que suelen olvidarse
+CREATE INDEX idx_users_email ON users(email);
+CREATE INDEX idx_orders_user_id ON orders(user_id);   -- FK siempre indexada
+CREATE INDEX idx_orders_status_created ON orders(status, created_at);  -- compuesto
+```
+
+## DB-RULE-05: Transacciones para operaciones multi-tabla
+
+Operaciones que modifican > 1 tabla: siempre en transaccion.
+Timeout en transacciones largas (default: 30 segundos).
+
+```python
+# FastAPI + SQLAlchemy
+async with db.begin():
+    await db.execute(update_order_query)
+    await db.execute(update_inventory_query)
+    await db.execute(create_log_query)
+    # Si cualquiera falla, todas hacen rollback automatico
+```
+
+```typescript
+// Prisma
+await prisma.$transaction([
+  prisma.order.update({ where: { id }, data: { status: 'paid' } }),
+  prisma.inventory.decrement({ where: { productId }, data: { stock: 1 } }),
+])
+```
+
+## DB-RULE-06: Connection pooling
+
+Pool size inicial: (CPUs * 2) + 1.
+Timeout de conexion explicito â€” nunca indefinido.
+Configurar en variables de entorno, no hardcodeado.
+
+```python
+# FastAPI + SQLAlchemy
+engine = create_async_engine(
+    DATABASE_URL,
+    pool_size=10,
+    max_overflow=20,
+    pool_timeout=30,
+    pool_pre_ping=True,  # verifica conexion antes de usarla
+)
+```
+
+## DB-RULE-07: Backup y recovery
+
+Backup automatico antes de cualquier migration destructiva en produccion.
+Railway, Supabase, PlanetScale: usar el backup automatico del proveedor.
+Self-hosted: pg_dump / mysqldump en cron diario, verificar que el archivo no esta corrupto.
+Retener: 7 dias diarios + 4 semanas semanales + 12 meses mensuales.
+
+## DB-RULE-08: Multi-tenancy (solo proyectos SaaS)
+
+Decidir el modelo ANTES de la primera migration â€” cambiar despues es costoso.
+
+| Modelo | Cuando usarlo |
+|--------|---------------|
+| Row-level (tenant_id en cada tabla) | Startups, < 1000 tenants, queries simples |
+| Schema-per-tenant | Compliance estricto, queries complejos por tenant |
+| DB-per-tenant | Enterprise, aislamiento total, > $100/mes por tenant |
+
+RLS (Row Level Security) en PostgreSQL para row-level:
+```sql
+ALTER TABLE orders ENABLE ROW LEVEL SECURITY;
+CREATE POLICY tenant_isolation ON orders
+  USING (tenant_id = current_setting('app.tenant_id')::uuid);
+```
+
+
+## Pack: react (instalado: 2026-06-22)
+
+# Pack: react â€” Reglas Especificas
+# Se agregan al .cursorrules base cuando este pack esta activo.
+
+---
+
+## RX-RULE-01: Componentes
+
+Componentes sin estado por defecto. Estado local solo cuando es necesario.
+No compartir estado entre componentes via props drilling de >2 niveles: usar context o store.
+Preferir composicion sobre herencia.
+Nombre de componente: PascalCase siempre.
+
+## RX-RULE-02: Hooks
+
+No usar useEffect para derivar estado: usar useMemo.
+useEffect limpio: siempre retornar cleanup si hay subscripciones o timers.
+No crear custom hooks hasta que la logica se repita en >2 componentes.
+useMemo / useCallback: solo cuando hay problema de rendimiento medido, no preventivamente.
+Dependencias de useEffect siempre completas (regla exhaustive-deps).
+
+## RX-RULE-03: Estilos
+
+Tokens Tailwind o variables CSS â€” nunca valores hex/px inline en JSX.
+No mezclar Tailwind con CSS-in-JS en el mismo componente.
+Clases condicionales: clsx() o cn(). Nunca string concatenation.
+No !important salvo para overrides de librerias terceras, documentado.
+
+## RX-RULE-04: Rendimiento
+
+React.memo solo en componentes con renders frecuentes y props costosas.
+Lazy loading de componentes pesados con React.lazy + Suspense.
+Imagenes: next/image siempre (Next.js). Atributo loading="lazy" en vanilla.
+Evitar re-renders innecesarios: no crear objetos/funciones dentro de JSX sin memo.
+
+## RX-RULE-05: TypeScript
+
+Props interfaces siempre tipadas. Sin any sin justificacion.
+Return type de funciones publicas explicito.
+Types con T, interfaces con I solo si hay convencion previa en el proyecto.
+Preferir type sobre interface para objetos simples.
+
+## RX-RULE-06: Data Fetching
+
+Fetch en el servidor (Server Components) cuando sea posible en Next.js.
+Error boundaries para fetch failures en componentes criticos.
+Loading states siempre presentes cuando hay async.
+No fetch directo a DB desde componentes â€” usar API routes o server actions.
+
+## RX-RULE-07: Formularios
+
+Validacion en cliente Y servidor. Nunca solo en cliente.
+Deshabilitar submit durante envio. Prevenir doble submit.
+Mensajes de error descriptivos y accesibles (aria-describedby).
+
+## RX-RULE-08: Seguridad
+
+No dangerouslySetInnerHTML salvo con sanitizacion documentada.
+Variables de entorno del servidor: NEXT_PUBLIC_ solo para lo realmente publico.
+No exponer API keys en el cliente.
+
+## RX-RULE-09: Scope Rule â€” La Regla Inquebrantable
+# Fuente: Gentleman Programming Book, Cap 15 + Cap 8
+
+"Scope determines structure" â€” sin excepciones.
+
+  Codigo usado por 2+ features â†’ directorio global/shared
+  Codigo usado por 1 feature   â†’ permanece LOCAL en esa feature
+  Sin excepciones              â†’ la regla es estricta
+
+Framework de decision:
+  1. Identificar scope: Â¿cuantas features lo usan?
+  2. Aplicar regla: 1 feature = local, 2+ features = global
+  3. Validar: Â¿la estructura grita lo que hace la app?
+
+## RX-RULE-10: Screaming Architecture â€” Estructura que GRITA
+
+La estructura de carpetas debe comunicar INMEDIATAMENTE lo que hace la app.
+
+CORRECTO â€” Grita funcionalidad:
+  src/features/
+    shopping-cart/      # Es un carrito!
+    user-authentication/ # Autenticacion!
+    task-management/    # Gestion de tareas!
+
+INCORRECTO â€” Agrupacion tecnica:
+  src/
+    components/   # Â¿Que hace la app?
+    containers/   # No dice nada
+    hooks/        # Puramente tecnico
+
+Estructura base obligatoria para proyectos React/Next.js:
+  src/
+    features/         â† modulos por funcionalidad (LOCAL = 1 feature)
+      [feature-name]/
+        [feature].tsx         â† Container principal (mismo nombre que feature)
+        components/           â† componentes secundarios de esta feature
+        services/             â† logica de negocio
+        hooks/                â† hooks de esta feature
+        models.ts             â† tipos/interfaces
+    shared/           â† GLOBAL = 2+ features
+      components/
+      hooks/
+      utils/
+    infrastructure/   â† cross-cutting (api, auth, monitoring)
+
+## RX-RULE-11: Container/Presentational Pattern
+
+Containers: business logic, state, data fetching.
+Presentational: solo UI con props, componentes puros.
+El container principal tiene EL MISMO NOMBRE que la feature.
+
+  âœ… task-management/
+      task-management.tsx      â† Container principal (negocio + estado)
+      components/
+        TaskList.tsx            â† Container secundario (puede tener estado local)
+        TaskItem.tsx            â† Presentational (solo UI)
+
+El container principal coordina: no delegar coordinacion a componentes hijos.
+Los presentationals son reutilizables por definicion â€” si tienen logica de negocio, son containers.
+
+## RX-RULE-12: PROJECT_SPECS.md â€” Especificacion antes de desarrollar
+# Fuente: Gentleman Programming Book, Cap 15
+
+IMPORTANTE: Antes de iniciar desarrollo, crear PROJECT_SPECS.md en la raiz del proyecto.
+Este archivo es el contrato entre el desarrollador, Claude Code y los subagentes.
+
+Contenido minimo obligatorio:
+  ## Project Description      â† que hace el proyecto
+  ## User Stories             â† epics con criterios de aceptacion
+  ## Data Structure           â† interfaces/tipos principales
+  ## Business Rules           â† reglas del dominio
+  ## Technical Notes          â† restricciones tecnicas
+
+Uso: referenciar en comandos a subagentes:
+  > @PROJECT_SPECS.md Use tdd-test-first to create tests for US-002
+
+O incluir en CLAUDE.md del proyecto:
+  ## Project Context
+  @PROJECT_SPECS.md contains all user stories and requirements
+
