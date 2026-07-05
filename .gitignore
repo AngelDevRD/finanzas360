@@ -43,3 +43,10 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Credenciales locales (no subir a git)
+.env
+.env.*
+
+# Build output de Gradle (android/build, distinto de /build de Flutter)
+/android/build/

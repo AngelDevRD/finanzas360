@@ -26,9 +26,9 @@ jobs:
       - run: flutter build apk --release
 
       - name: Rename APK with version
-        run: cp build/app/outputs/flutter-apk/app-release.apk gestor_personal-${{ github.ref_name }}.apk
+        run: cp build/app/outputs/flutter-apk/app-release.apk finanzas360-${{ github.ref_name }}.apk
 
       - uses: softprops/action-gh-release@v2
         with:
-          files: gestor_personal-${{ github.ref_name }}.apk
+          files: finanzas360-${{ github.ref_name }}.apk
           generate_release_notes: true

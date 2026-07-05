@@ -1,30 +1,37 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
+import 'package:drift/native.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
-import 'package:gestor_personal/main.dart';
+import 'package:finanzas360/core/database/app_database.dart';
+import 'package:finanzas360/core/database/database_provider.dart';
+import 'package:finanzas360/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('App carga el dashboard sin excepciones', (tester) async {
+    await initializeDateFormatting('es');
+    final db = AppDatabase(NativeDatabase.memory());
+    addTearDown(db.close);
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [databaseProvider.overrideWithValue(db)],
+        child: const MyApp(),
+      ),
+    );
+    // No se usa pumpAndSettle: los streams de Drift quedan activos
+    // indefinidamente (watch()), por lo que nunca "se asientan".
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 500));
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    expect(find.text('Dashboard'), findsOneWidget);
+
+    // Desmontar el árbol explícitamente y dejar correr un frame mas: así el
+    // timer de cierre que Drift crea al cancelar el stream (en el dispose
+    // del ProviderScope) se ejecuta antes de que el test termine, evitando
+    // el assert "timersPending" de flutter_test.
+    await tester.pumpWidget(const SizedBox());
+    await tester.pump(const Duration(milliseconds: 500));
   });
 }
