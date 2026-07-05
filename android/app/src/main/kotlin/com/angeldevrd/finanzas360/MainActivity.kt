@@ -1,4 +1,4 @@
-package com.example.finanzas360
+package com.angeldevrd.finanzas360
 
 import android.content.Intent
 import androidx.core.content.FileProvider
