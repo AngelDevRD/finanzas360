@@ -71,6 +71,12 @@ dependencies:
   # Cliente HTTP para el asistente de IA
   http: ^1.2.2
 
+  # Backend en la nube (modo nube: auth + almacenamiento remoto)
+  supabase_flutter: ^2.8.0
+
+  # Version de la app para el panel de ajustes
+  package_info_plus: ^8.1.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
