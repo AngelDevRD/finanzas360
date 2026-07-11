@@ -5,10 +5,23 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/app_updater.dart';
 import 'core/storage_mode.dart';
 import 'core/supabase_config.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_screen.dart';
+
+bool _updateCheckStarted = false;
+
+void _scheduleUpdateCheck(BuildContext context) {
+  if (_updateCheckStarted) return;
+  _updateCheckStarted = true;
+  WidgetsBinding.instance.addPostFrameCallback((_) {
+    if (context.mounted) {
+      AppUpdater.checkForUpdate(context, slug: 'finanzas360');
+    }
+  });
+}
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +54,10 @@ class MyApp extends ConsumerWidget {
         theme: buildLightTheme(),
         darkTheme: buildDarkTheme(),
         home: const LoginScreen(),
+        builder: (context, child) {
+          _scheduleUpdateCheck(context);
+          return child!;
+        },
       );
     }
 
@@ -51,6 +68,10 @@ class MyApp extends ConsumerWidget {
       theme: buildLightTheme(),
       darkTheme: buildDarkTheme(),
       routerConfig: appRouter,
+      builder: (context, child) {
+        _scheduleUpdateCheck(context);
+        return child!;
+      },
     );
   }
 }

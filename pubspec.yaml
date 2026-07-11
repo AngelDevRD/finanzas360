@@ -76,6 +76,7 @@ dependencies:
 
   # Version de la app para el panel de ajustes
   package_info_plus: ^8.1.2
+  url_launcher: ^6.3.0
 
 dev_dependencies:
   flutter_test:
