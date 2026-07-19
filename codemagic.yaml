@@ -20,10 +20,10 @@ workflows:
         PACKAGE_NAME: "com.angeldevrd.finanzas360"
         REPO: "AngelDevRD/finanzas360"
       flutter: stable
-      cache:
-        cache_paths:
-          - $HOME/.pub-cache
-          - $FLUTTER_ROOT/.pub-cache
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $FLUTTER_ROOT/.pub-cache
     scripts:
       - name: Instalar dependencias
         script: flutter pub get
@@ -98,10 +98,10 @@ workflows:
       flutter: stable
       xcode: latest
       cocoapods: default
-      cache:
-        cache_paths:
-          - $HOME/.pub-cache
-          - $HOME/Library/Caches/CocoaPods
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
+        - $HOME/Library/Caches/CocoaPods
     scripts:
       - name: Instalar dependencias
         script: flutter pub get
@@ -153,9 +153,9 @@ workflows:
         - supabase_credentials # SUPABASE_URL, SUPABASE_ANON_KEY
         - portfolio_release # RELEASE_GH_TOKEN, WEBHOOK_SECRET
       flutter: stable
-      cache:
-        cache_paths:
-          - $HOME/.pub-cache
+    cache:
+      cache_paths:
+        - $HOME/.pub-cache
     scripts:
       - name: Instalar dependencias
         script: flutter pub get
