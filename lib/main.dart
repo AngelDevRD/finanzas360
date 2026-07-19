@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app/router.dart';
 import 'app/theme.dart';
+import 'core/app_updater.dart';
 import 'core/storage_mode.dart';
 import 'core/supabase_config.dart';
 import 'features/auth/data/auth_repository.dart';
@@ -23,6 +24,10 @@ Future<void> main() async {
 class MyApp extends ConsumerWidget {
   const MyApp({super.key});
 
+  // MyApp puede reconstruirse varias veces (cambio de tema, login, etc.),
+  // pero el chequeo de actualizacion solo debe dispararse una vez por sesion.
+  static bool _updateChecked = false;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final themeMode = ref.watch(themeModeProvider);
@@ -32,6 +37,15 @@ class MyApp extends ConsumerWidget {
     final needsLogin =
         storageMode == StorageMode.cloud &&
         ref.watch(currentUserProvider) == null;
+
+    if (!_updateChecked) {
+      _updateChecked = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (context.mounted) {
+          AppUpdater.checkForUpdate(context, slug: 'finanzas360');
+        }
+      });
+    }
 
     if (needsLogin) {
       return MaterialApp(

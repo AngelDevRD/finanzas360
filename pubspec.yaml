@@ -77,6 +77,9 @@ dependencies:
   # Version de la app para el panel de ajustes
   package_info_plus: ^8.1.2
 
+  # Abrir URL de descarga del APK en el navegador del sistema (in-app updater)
+  url_launcher: ^6.3.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

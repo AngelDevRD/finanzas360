@@ -1,0 +1,214 @@
+workflows:
+  android-workflow:
+    name: Android (APK + AAB)
+    max_build_duration: 60
+    instance_type: linux_x2
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    environment:
+      groups:
+        - supabase_credentials # SUPABASE_URL, SUPABASE_ANON_KEY
+        - portfolio_release # RELEASE_GH_TOKEN, WEBHOOK_SECRET (compartido entre las 4 apps)
+      android_signing:
+        - finanzas360_keystore # subir el keystore en Codemagic > Code signing identities
+      vars:
+        PACKAGE_NAME: "com.angeldevrd.finanzas360"
+        REPO: "AngelDevRD/finanzas360"
+      flutter: stable
+      cache:
+        cache_paths:
+          - $HOME/.pub-cache
+          - $FLUTTER_ROOT/.pub-cache
+    scripts:
+      - name: Instalar dependencias
+        script: flutter pub get
+      - name: Analizar
+        script: flutter analyze
+      - name: Compilar APK (release, firmado)
+        script: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+      - name: Compilar AAB (release, para Google Play)
+        script: |
+          flutter build appbundle --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+      - name: Renombrar artefactos para la tienda automatica
+        script: |
+          cp build/app/outputs/flutter-apk/app-release.apk build/app/outputs/flutter-apk/finanzas360-android.apk
+          cp build/app/outputs/bundle/release/app-release.aab build/app/outputs/bundle/release/finanzas360-android.aab
+      - name: Publicar release en GitHub y notificar al portafolio
+        script: |
+          CURL_RETRY="--retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors"
+          TAG="v$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)"
+          RELEASE_ID=$(curl -s $CURL_RETRY -H "Authorization: Bearer $RELEASE_GH_TOKEN" \
+            "https://api.github.com/repos/$REPO/releases/tags/$TAG" | grep -o '"id": *[0-9]*' | head -1 | grep -o '[0-9]*')
+          if [ -z "$RELEASE_ID" ]; then
+            RELEASE_ID=$(curl -s $CURL_RETRY -X POST -H "Authorization: Bearer $RELEASE_GH_TOKEN" -H "Content-Type: application/json" \
+              -d "{\"tag_name\":\"$TAG\",\"generate_release_notes\":true}" \
+              "https://api.github.com/repos/$REPO/releases" | grep -o '"id": *[0-9]*' | head -1 | grep -o '[0-9]*')
+          fi
+          curl -s $CURL_RETRY -X POST -H "Authorization: Bearer $RELEASE_GH_TOKEN" -H "Content-Type: application/vnd.android.package-archive" \
+            --data-binary @build/app/outputs/flutter-apk/finanzas360-android.apk \
+            "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=finanzas360-android.apk"
+          curl -s $CURL_RETRY -X POST -H "Authorization: Bearer $RELEASE_GH_TOKEN" -H "Content-Type: application/octet-stream" \
+            --data-binary @build/app/outputs/bundle/release/finanzas360-android.aab \
+            "https://uploads.github.com/repos/$REPO/releases/$RELEASE_ID/assets?name=finanzas360-android.aab"
+          curl -sf $CURL_RETRY -X POST -H "Content-Type: application/json" \
+            -d '{"workflowId":"android-workflow","buildStatus":"success"}' \
+            "https://portfolio-five-zeta-xf21p0a5se.vercel.app/api/orchestrator/webhook?owner=AngelDevRD&repo=finanzas360&secret=$WEBHOOK_SECRET"
+    artifacts:
+      - build/app/outputs/flutter-apk/finanzas360-android.apk
+      - build/app/outputs/bundle/release/finanzas360-android.aab
+    publishing:
+      email:
+        recipients:
+          - leybayesenia1975@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  ios-workflow:
+    name: iOS (IPA)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    environment:
+      groups:
+        - supabase_credentials # SUPABASE_URL, SUPABASE_ANON_KEY
+        - portfolio_release # RELEASE_GH_TOKEN, WEBHOOK_SECRET
+      ios_signing:
+        distribution_type: app_store # cambiar a "ad_hoc" para pruebas fuera de TestFlight
+        bundle_identifier: com.angeldevrd.finanzas360
+      vars:
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+      cache:
+        cache_paths:
+          - $HOME/.pub-cache
+          - $HOME/Library/Caches/CocoaPods
+    scripts:
+      - name: Instalar dependencias
+        script: flutter pub get
+      - name: Instalar CocoaPods
+        script: |
+          find . -name "Podfile" -maxdepth 2 -execdir pod install \;
+      - name: Configurar firma automatica (App Store Connect API key)
+        script: |
+          xcode-project use-profiles
+      - name: Compilar IPA (release)
+        script: |
+          flutter build ipa --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY \
+            --export-options-plist=/Users/builder/export_options.plist
+      - name: Notificar al portafolio (distribucion via TestFlight, sin asset descargable)
+        script: |
+          curl -sf --retry 3 --retry-delay 5 --retry-connrefused --retry-all-errors -X POST -H "Content-Type: application/json" \
+            -d '{"workflowId":"ios-workflow","buildStatus":"success"}' \
+            "https://portfolio-five-zeta-xf21p0a5se.vercel.app/api/orchestrator/webhook?owner=AngelDevRD&repo=finanzas360&secret=$WEBHOOK_SECRET"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - leybayesenia1975@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        submit_to_app_store: false
+
+  windows-workflow:
+    name: Windows (EXE)
+    max_build_duration: 60
+    instance_type: windows_x2
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+    environment:
+      groups:
+        - supabase_credentials # SUPABASE_URL, SUPABASE_ANON_KEY
+        - portfolio_release # RELEASE_GH_TOKEN, WEBHOOK_SECRET
+      flutter: stable
+      cache:
+        cache_paths:
+          - $HOME/.pub-cache
+    scripts:
+      - name: Instalar dependencias
+        script: flutter pub get
+      - name: Habilitar soporte desktop Windows
+        script: flutter config --enable-windows-desktop
+      - name: Compilar ejecutable de Windows (release)
+        script: |
+          flutter build windows --release `
+            --dart-define=SUPABASE_URL=$env:SUPABASE_URL `
+            --dart-define=SUPABASE_ANON_KEY=$env:SUPABASE_ANON_KEY
+      - name: Empaquetar en ZIP
+        script: |
+          Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath build/windows/finanzas360-windows.zip -Force
+      - name: Publicar release en GitHub y notificar al portafolio
+        script: |
+          function Invoke-WithRetry {
+            param([scriptblock]$Action, [int]$Retries = 3, [int]$DelaySeconds = 5)
+            for ($i = 1; $i -le $Retries; $i++) {
+              try { return & $Action }
+              catch {
+                if ($i -eq $Retries) { throw }
+                Write-Host "Intento $i fallo, reintentando en $DelaySeconds s... ($($_.Exception.Message))"
+                Start-Sleep -Seconds $DelaySeconds
+              }
+            }
+          }
+
+          $repo = "AngelDevRD/finanzas360"
+          $tag = "v" + ((Get-Content pubspec.yaml | Select-String '^version:').ToString() -replace 'version:\s*', '' -replace '\+.*', '').Trim()
+          $headers = @{ Authorization = "Bearer $env:RELEASE_GH_TOKEN" }
+          try {
+            $release = Invoke-WithRetry { Invoke-RestMethod -Uri "https://api.github.com/repos/$repo/releases/tags/$tag" -Headers $headers }
+          } catch {
+            $release = Invoke-WithRetry {
+              Invoke-RestMethod -Method Post -Uri "https://api.github.com/repos/$repo/releases" -Headers $headers `
+                -Body (@{ tag_name = $tag; generate_release_notes = $true } | ConvertTo-Json) -ContentType "application/json"
+            }
+          }
+          $uploadHeaders = @{ Authorization = "Bearer $env:RELEASE_GH_TOKEN" }
+          Invoke-WithRetry {
+            Invoke-RestMethod -Method Post -Uri "https://uploads.github.com/repos/$repo/releases/$($release.id)/assets?name=finanzas360-windows.zip" `
+              -Headers $uploadHeaders -ContentType "application/zip" -InFile "build/windows/finanzas360-windows.zip"
+          }
+          Invoke-WithRetry {
+            Invoke-RestMethod -Method Post -Uri "https://portfolio-five-zeta-xf21p0a5se.vercel.app/api/orchestrator/webhook?owner=AngelDevRD&repo=finanzas360&secret=$env:WEBHOOK_SECRET" `
+              -ContentType "application/json" -Body '{"workflowId":"windows-workflow","buildStatus":"success"}'
+          }
+    artifacts:
+      - build/windows/finanzas360-windows.zip
+    publishing:
+      email:
+        recipients:
+          - leybayesenia1975@gmail.com
+        notify:
+          success: true
+          failure: true
