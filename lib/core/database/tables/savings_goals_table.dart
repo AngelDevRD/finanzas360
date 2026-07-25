@@ -9,6 +9,8 @@ class SavingsGoals extends Table {
   TextColumn get icon => text()();
   IntColumn get color => integer()();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get dirty => boolean().withDefault(const Constant(true))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

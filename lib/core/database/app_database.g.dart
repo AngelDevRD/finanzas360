@@ -89,6 +89,34 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -99,6 +127,8 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
     initialBalance,
     currentBalance,
     createdAt,
+    dirty,
+    deleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -173,6 +203,18 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
     return context;
   }
 
@@ -214,6 +256,14 @@ class $AccountsTable extends Accounts with TableInfo<$AccountsTable, Account> {
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
     );
   }
 
@@ -232,6 +282,8 @@ class Account extends DataClass implements Insertable<Account> {
   final double initialBalance;
   final double currentBalance;
   final DateTime createdAt;
+  final bool dirty;
+  final bool deleted;
   const Account({
     required this.id,
     required this.name,
@@ -241,6 +293,8 @@ class Account extends DataClass implements Insertable<Account> {
     required this.initialBalance,
     required this.currentBalance,
     required this.createdAt,
+    required this.dirty,
+    required this.deleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -253,6 +307,8 @@ class Account extends DataClass implements Insertable<Account> {
     map['initial_balance'] = Variable<double>(initialBalance);
     map['current_balance'] = Variable<double>(currentBalance);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
     return map;
   }
 
@@ -266,6 +322,8 @@ class Account extends DataClass implements Insertable<Account> {
       initialBalance: Value(initialBalance),
       currentBalance: Value(currentBalance),
       createdAt: Value(createdAt),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
     );
   }
 
@@ -283,6 +341,8 @@ class Account extends DataClass implements Insertable<Account> {
       initialBalance: serializer.fromJson<double>(json['initialBalance']),
       currentBalance: serializer.fromJson<double>(json['currentBalance']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
   @override
@@ -297,6 +357,8 @@ class Account extends DataClass implements Insertable<Account> {
       'initialBalance': serializer.toJson<double>(initialBalance),
       'currentBalance': serializer.toJson<double>(currentBalance),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
     };
   }
 
@@ -309,6 +371,8 @@ class Account extends DataClass implements Insertable<Account> {
     double? initialBalance,
     double? currentBalance,
     DateTime? createdAt,
+    bool? dirty,
+    bool? deleted,
   }) => Account(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -318,6 +382,8 @@ class Account extends DataClass implements Insertable<Account> {
     initialBalance: initialBalance ?? this.initialBalance,
     currentBalance: currentBalance ?? this.currentBalance,
     createdAt: createdAt ?? this.createdAt,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
   );
   Account copyWithCompanion(AccountsCompanion data) {
     return Account(
@@ -333,6 +399,8 @@ class Account extends DataClass implements Insertable<Account> {
           ? data.currentBalance.value
           : this.currentBalance,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
 
@@ -346,7 +414,9 @@ class Account extends DataClass implements Insertable<Account> {
           ..write('color: $color, ')
           ..write('initialBalance: $initialBalance, ')
           ..write('currentBalance: $currentBalance, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted')
           ..write(')'))
         .toString();
   }
@@ -361,6 +431,8 @@ class Account extends DataClass implements Insertable<Account> {
     initialBalance,
     currentBalance,
     createdAt,
+    dirty,
+    deleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -373,7 +445,9 @@ class Account extends DataClass implements Insertable<Account> {
           other.color == this.color &&
           other.initialBalance == this.initialBalance &&
           other.currentBalance == this.currentBalance &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted);
 }
 
 class AccountsCompanion extends UpdateCompanion<Account> {
@@ -385,6 +459,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
   final Value<double> initialBalance;
   final Value<double> currentBalance;
   final Value<DateTime> createdAt;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
   final Value<int> rowid;
   const AccountsCompanion({
     this.id = const Value.absent(),
@@ -395,6 +471,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.initialBalance = const Value.absent(),
     this.currentBalance = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   AccountsCompanion.insert({
@@ -406,6 +484,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     this.initialBalance = const Value.absent(),
     this.currentBalance = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -421,6 +501,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Expression<double>? initialBalance,
     Expression<double>? currentBalance,
     Expression<DateTime>? createdAt,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -432,6 +514,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       if (initialBalance != null) 'initial_balance': initialBalance,
       if (currentBalance != null) 'current_balance': currentBalance,
       if (createdAt != null) 'created_at': createdAt,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -445,6 +529,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     Value<double>? initialBalance,
     Value<double>? currentBalance,
     Value<DateTime>? createdAt,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
     Value<int>? rowid,
   }) {
     return AccountsCompanion(
@@ -456,6 +542,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
       initialBalance: initialBalance ?? this.initialBalance,
       currentBalance: currentBalance ?? this.currentBalance,
       createdAt: createdAt ?? this.createdAt,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -487,6 +575,12 @@ class AccountsCompanion extends UpdateCompanion<Account> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -504,6 +598,8 @@ class AccountsCompanion extends UpdateCompanion<Account> {
           ..write('initialBalance: $initialBalance, ')
           ..write('currentBalance: $currentBalance, ')
           ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -587,6 +683,34 @@ class $CategoriesTable extends Categories
     ),
     defaultValue: const Constant(false),
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -596,6 +720,8 @@ class $CategoriesTable extends Categories
     icon,
     color,
     isDefault,
+    dirty,
+    deleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -658,6 +784,18 @@ class $CategoriesTable extends Categories
         isDefault.isAcceptableOrUnknown(data['is_default']!, _isDefaultMeta),
       );
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
     return context;
   }
 
@@ -695,6 +833,14 @@ class $CategoriesTable extends Categories
         DriftSqlType.bool,
         data['${effectivePrefix}is_default'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
     );
   }
 
@@ -712,6 +858,8 @@ class Category extends DataClass implements Insertable<Category> {
   final String icon;
   final int color;
   final bool isDefault;
+  final bool dirty;
+  final bool deleted;
   const Category({
     required this.id,
     required this.name,
@@ -720,6 +868,8 @@ class Category extends DataClass implements Insertable<Category> {
     required this.icon,
     required this.color,
     required this.isDefault,
+    required this.dirty,
+    required this.deleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -733,6 +883,8 @@ class Category extends DataClass implements Insertable<Category> {
     map['icon'] = Variable<String>(icon);
     map['color'] = Variable<int>(color);
     map['is_default'] = Variable<bool>(isDefault);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
     return map;
   }
 
@@ -747,6 +899,8 @@ class Category extends DataClass implements Insertable<Category> {
       icon: Value(icon),
       color: Value(color),
       isDefault: Value(isDefault),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
     );
   }
 
@@ -763,6 +917,8 @@ class Category extends DataClass implements Insertable<Category> {
       icon: serializer.fromJson<String>(json['icon']),
       color: serializer.fromJson<int>(json['color']),
       isDefault: serializer.fromJson<bool>(json['isDefault']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
   @override
@@ -776,6 +932,8 @@ class Category extends DataClass implements Insertable<Category> {
       'icon': serializer.toJson<String>(icon),
       'color': serializer.toJson<int>(color),
       'isDefault': serializer.toJson<bool>(isDefault),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
     };
   }
 
@@ -787,6 +945,8 @@ class Category extends DataClass implements Insertable<Category> {
     String? icon,
     int? color,
     bool? isDefault,
+    bool? dirty,
+    bool? deleted,
   }) => Category(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -795,6 +955,8 @@ class Category extends DataClass implements Insertable<Category> {
     icon: icon ?? this.icon,
     color: color ?? this.color,
     isDefault: isDefault ?? this.isDefault,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
   );
   Category copyWithCompanion(CategoriesCompanion data) {
     return Category(
@@ -805,6 +967,8 @@ class Category extends DataClass implements Insertable<Category> {
       icon: data.icon.present ? data.icon.value : this.icon,
       color: data.color.present ? data.color.value : this.color,
       isDefault: data.isDefault.present ? data.isDefault.value : this.isDefault,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
 
@@ -817,14 +981,25 @@ class Category extends DataClass implements Insertable<Category> {
           ..write('parentId: $parentId, ')
           ..write('icon: $icon, ')
           ..write('color: $color, ')
-          ..write('isDefault: $isDefault')
+          ..write('isDefault: $isDefault, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode =>
-      Object.hash(id, name, type, parentId, icon, color, isDefault);
+  int get hashCode => Object.hash(
+    id,
+    name,
+    type,
+    parentId,
+    icon,
+    color,
+    isDefault,
+    dirty,
+    deleted,
+  );
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -835,7 +1010,9 @@ class Category extends DataClass implements Insertable<Category> {
           other.parentId == this.parentId &&
           other.icon == this.icon &&
           other.color == this.color &&
-          other.isDefault == this.isDefault);
+          other.isDefault == this.isDefault &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted);
 }
 
 class CategoriesCompanion extends UpdateCompanion<Category> {
@@ -846,6 +1023,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
   final Value<String> icon;
   final Value<int> color;
   final Value<bool> isDefault;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
   final Value<int> rowid;
   const CategoriesCompanion({
     this.id = const Value.absent(),
@@ -855,6 +1034,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     this.icon = const Value.absent(),
     this.color = const Value.absent(),
     this.isDefault = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   CategoriesCompanion.insert({
@@ -865,6 +1046,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     required String icon,
     required int color,
     this.isDefault = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -879,6 +1062,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Expression<String>? icon,
     Expression<int>? color,
     Expression<bool>? isDefault,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -889,6 +1074,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       if (icon != null) 'icon': icon,
       if (color != null) 'color': color,
       if (isDefault != null) 'is_default': isDefault,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -901,6 +1088,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     Value<String>? icon,
     Value<int>? color,
     Value<bool>? isDefault,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
     Value<int>? rowid,
   }) {
     return CategoriesCompanion(
@@ -911,6 +1100,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       isDefault: isDefault ?? this.isDefault,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -939,6 +1130,12 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
     if (isDefault.present) {
       map['is_default'] = Variable<bool>(isDefault.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -955,6 +1152,8 @@ class CategoriesCompanion extends UpdateCompanion<Category> {
           ..write('icon: $icon, ')
           ..write('color: $color, ')
           ..write('isDefault: $isDefault, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1088,6 +1287,34 @@ class $TransactionsTable extends Transactions
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1101,6 +1328,8 @@ class $TransactionsTable extends Transactions
     note,
     receiptPath,
     createdAt,
+    dirty,
+    deleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1198,6 +1427,18 @@ class $TransactionsTable extends Transactions
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
     return context;
   }
 
@@ -1251,6 +1492,14 @@ class $TransactionsTable extends Transactions
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
     );
   }
 
@@ -1272,6 +1521,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
   final String note;
   final String? receiptPath;
   final DateTime createdAt;
+  final bool dirty;
+  final bool deleted;
   const Transaction({
     required this.id,
     required this.accountId,
@@ -1284,6 +1535,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     required this.note,
     this.receiptPath,
     required this.createdAt,
+    required this.dirty,
+    required this.deleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1301,6 +1554,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       map['receipt_path'] = Variable<String>(receiptPath);
     }
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
     return map;
   }
 
@@ -1319,6 +1574,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ? const Value.absent()
           : Value(receiptPath),
       createdAt: Value(createdAt),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
     );
   }
 
@@ -1339,6 +1596,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       note: serializer.fromJson<String>(json['note']),
       receiptPath: serializer.fromJson<String?>(json['receiptPath']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
   @override
@@ -1356,6 +1615,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
       'note': serializer.toJson<String>(note),
       'receiptPath': serializer.toJson<String?>(receiptPath),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
     };
   }
 
@@ -1371,6 +1632,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     String? note,
     Value<String?> receiptPath = const Value.absent(),
     DateTime? createdAt,
+    bool? dirty,
+    bool? deleted,
   }) => Transaction(
     id: id ?? this.id,
     accountId: accountId ?? this.accountId,
@@ -1383,6 +1646,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     note: note ?? this.note,
     receiptPath: receiptPath.present ? receiptPath.value : this.receiptPath,
     createdAt: createdAt ?? this.createdAt,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
   );
   Transaction copyWithCompanion(TransactionsCompanion data) {
     return Transaction(
@@ -1405,6 +1670,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ? data.receiptPath.value
           : this.receiptPath,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
 
@@ -1421,7 +1688,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           ..write('paymentMethod: $paymentMethod, ')
           ..write('note: $note, ')
           ..write('receiptPath: $receiptPath, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted')
           ..write(')'))
         .toString();
   }
@@ -1439,6 +1708,8 @@ class Transaction extends DataClass implements Insertable<Transaction> {
     note,
     receiptPath,
     createdAt,
+    dirty,
+    deleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -1454,7 +1725,9 @@ class Transaction extends DataClass implements Insertable<Transaction> {
           other.paymentMethod == this.paymentMethod &&
           other.note == this.note &&
           other.receiptPath == this.receiptPath &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted);
 }
 
 class TransactionsCompanion extends UpdateCompanion<Transaction> {
@@ -1469,6 +1742,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
   final Value<String> note;
   final Value<String?> receiptPath;
   final Value<DateTime> createdAt;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
   final Value<int> rowid;
   const TransactionsCompanion({
     this.id = const Value.absent(),
@@ -1482,6 +1757,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.note = const Value.absent(),
     this.receiptPath = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   TransactionsCompanion.insert({
@@ -1496,6 +1773,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     this.note = const Value.absent(),
     this.receiptPath = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        accountId = Value(accountId),
@@ -1515,6 +1794,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Expression<String>? note,
     Expression<String>? receiptPath,
     Expression<DateTime>? createdAt,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1529,6 +1810,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       if (note != null) 'note': note,
       if (receiptPath != null) 'receipt_path': receiptPath,
       if (createdAt != null) 'created_at': createdAt,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1545,6 +1828,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     Value<String>? note,
     Value<String?>? receiptPath,
     Value<DateTime>? createdAt,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
     Value<int>? rowid,
   }) {
     return TransactionsCompanion(
@@ -1559,6 +1844,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
       note: note ?? this.note,
       receiptPath: receiptPath ?? this.receiptPath,
       createdAt: createdAt ?? this.createdAt,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1599,6 +1886,12 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1619,6 +1912,8 @@ class TransactionsCompanion extends UpdateCompanion<Transaction> {
           ..write('note: $note, ')
           ..write('receiptPath: $receiptPath, ')
           ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -1682,6 +1977,34 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     type: DriftSqlType.double,
     requiredDuringInsert: true,
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -1689,6 +2012,8 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     month,
     year,
     limitAmount,
+    dirty,
+    deleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -1742,6 +2067,18 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
     } else if (isInserting) {
       context.missing(_limitAmountMeta);
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
     return context;
   }
 
@@ -1771,6 +2108,14 @@ class $BudgetsTable extends Budgets with TableInfo<$BudgetsTable, Budget> {
         DriftSqlType.double,
         data['${effectivePrefix}limit_amount'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
     );
   }
 
@@ -1786,12 +2131,16 @@ class Budget extends DataClass implements Insertable<Budget> {
   final int month;
   final int year;
   final double limitAmount;
+  final bool dirty;
+  final bool deleted;
   const Budget({
     required this.id,
     required this.categoryId,
     required this.month,
     required this.year,
     required this.limitAmount,
+    required this.dirty,
+    required this.deleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -1801,6 +2150,8 @@ class Budget extends DataClass implements Insertable<Budget> {
     map['month'] = Variable<int>(month);
     map['year'] = Variable<int>(year);
     map['limit_amount'] = Variable<double>(limitAmount);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
     return map;
   }
 
@@ -1811,6 +2162,8 @@ class Budget extends DataClass implements Insertable<Budget> {
       month: Value(month),
       year: Value(year),
       limitAmount: Value(limitAmount),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
     );
   }
 
@@ -1825,6 +2178,8 @@ class Budget extends DataClass implements Insertable<Budget> {
       month: serializer.fromJson<int>(json['month']),
       year: serializer.fromJson<int>(json['year']),
       limitAmount: serializer.fromJson<double>(json['limitAmount']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
   @override
@@ -1836,6 +2191,8 @@ class Budget extends DataClass implements Insertable<Budget> {
       'month': serializer.toJson<int>(month),
       'year': serializer.toJson<int>(year),
       'limitAmount': serializer.toJson<double>(limitAmount),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
     };
   }
 
@@ -1845,12 +2202,16 @@ class Budget extends DataClass implements Insertable<Budget> {
     int? month,
     int? year,
     double? limitAmount,
+    bool? dirty,
+    bool? deleted,
   }) => Budget(
     id: id ?? this.id,
     categoryId: categoryId ?? this.categoryId,
     month: month ?? this.month,
     year: year ?? this.year,
     limitAmount: limitAmount ?? this.limitAmount,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
   );
   Budget copyWithCompanion(BudgetsCompanion data) {
     return Budget(
@@ -1863,6 +2224,8 @@ class Budget extends DataClass implements Insertable<Budget> {
       limitAmount: data.limitAmount.present
           ? data.limitAmount.value
           : this.limitAmount,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
 
@@ -1873,13 +2236,16 @@ class Budget extends DataClass implements Insertable<Budget> {
           ..write('categoryId: $categoryId, ')
           ..write('month: $month, ')
           ..write('year: $year, ')
-          ..write('limitAmount: $limitAmount')
+          ..write('limitAmount: $limitAmount, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted')
           ..write(')'))
         .toString();
   }
 
   @override
-  int get hashCode => Object.hash(id, categoryId, month, year, limitAmount);
+  int get hashCode =>
+      Object.hash(id, categoryId, month, year, limitAmount, dirty, deleted);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
@@ -1888,7 +2254,9 @@ class Budget extends DataClass implements Insertable<Budget> {
           other.categoryId == this.categoryId &&
           other.month == this.month &&
           other.year == this.year &&
-          other.limitAmount == this.limitAmount);
+          other.limitAmount == this.limitAmount &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted);
 }
 
 class BudgetsCompanion extends UpdateCompanion<Budget> {
@@ -1897,6 +2265,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
   final Value<int> month;
   final Value<int> year;
   final Value<double> limitAmount;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
   final Value<int> rowid;
   const BudgetsCompanion({
     this.id = const Value.absent(),
@@ -1904,6 +2274,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     this.month = const Value.absent(),
     this.year = const Value.absent(),
     this.limitAmount = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   BudgetsCompanion.insert({
@@ -1912,6 +2284,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     required int month,
     required int year,
     required double limitAmount,
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        categoryId = Value(categoryId),
@@ -1924,6 +2298,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     Expression<int>? month,
     Expression<int>? year,
     Expression<double>? limitAmount,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -1932,6 +2308,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
       if (month != null) 'month': month,
       if (year != null) 'year': year,
       if (limitAmount != null) 'limit_amount': limitAmount,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -1942,6 +2320,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     Value<int>? month,
     Value<int>? year,
     Value<double>? limitAmount,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
     Value<int>? rowid,
   }) {
     return BudgetsCompanion(
@@ -1950,6 +2330,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
       month: month ?? this.month,
       year: year ?? this.year,
       limitAmount: limitAmount ?? this.limitAmount,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -1972,6 +2354,12 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
     if (limitAmount.present) {
       map['limit_amount'] = Variable<double>(limitAmount.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -1986,6 +2374,8 @@ class BudgetsCompanion extends UpdateCompanion<Budget> {
           ..write('month: $month, ')
           ..write('year: $year, ')
           ..write('limitAmount: $limitAmount, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2080,6 +2470,34 @@ class $SavingsGoalsTable extends SavingsGoals
     requiredDuringInsert: false,
     defaultValue: currentDateAndTime,
   );
+  static const VerificationMeta _dirtyMeta = const VerificationMeta('dirty');
+  @override
+  late final GeneratedColumn<bool> dirty = GeneratedColumn<bool>(
+    'dirty',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("dirty" IN (0, 1))',
+    ),
+    defaultValue: const Constant(true),
+  );
+  static const VerificationMeta _deletedMeta = const VerificationMeta(
+    'deleted',
+  );
+  @override
+  late final GeneratedColumn<bool> deleted = GeneratedColumn<bool>(
+    'deleted',
+    aliasedName,
+    false,
+    type: DriftSqlType.bool,
+    requiredDuringInsert: false,
+    defaultConstraints: GeneratedColumn.constraintIsAlways(
+      'CHECK ("deleted" IN (0, 1))',
+    ),
+    defaultValue: const Constant(false),
+  );
   @override
   List<GeneratedColumn> get $columns => [
     id,
@@ -2090,6 +2508,8 @@ class $SavingsGoalsTable extends SavingsGoals
     icon,
     color,
     createdAt,
+    dirty,
+    deleted,
   ];
   @override
   String get aliasedName => _alias ?? actualTableName;
@@ -2164,6 +2584,18 @@ class $SavingsGoalsTable extends SavingsGoals
         createdAt.isAcceptableOrUnknown(data['created_at']!, _createdAtMeta),
       );
     }
+    if (data.containsKey('dirty')) {
+      context.handle(
+        _dirtyMeta,
+        dirty.isAcceptableOrUnknown(data['dirty']!, _dirtyMeta),
+      );
+    }
+    if (data.containsKey('deleted')) {
+      context.handle(
+        _deletedMeta,
+        deleted.isAcceptableOrUnknown(data['deleted']!, _deletedMeta),
+      );
+    }
     return context;
   }
 
@@ -2205,6 +2637,14 @@ class $SavingsGoalsTable extends SavingsGoals
         DriftSqlType.dateTime,
         data['${effectivePrefix}created_at'],
       )!,
+      dirty: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}dirty'],
+      )!,
+      deleted: attachedDatabase.typeMapping.read(
+        DriftSqlType.bool,
+        data['${effectivePrefix}deleted'],
+      )!,
     );
   }
 
@@ -2223,6 +2663,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
   final String icon;
   final int color;
   final DateTime createdAt;
+  final bool dirty;
+  final bool deleted;
   const SavingsGoal({
     required this.id,
     required this.name,
@@ -2232,6 +2674,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
     required this.icon,
     required this.color,
     required this.createdAt,
+    required this.dirty,
+    required this.deleted,
   });
   @override
   Map<String, Expression> toColumns(bool nullToAbsent) {
@@ -2246,6 +2690,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
     map['icon'] = Variable<String>(icon);
     map['color'] = Variable<int>(color);
     map['created_at'] = Variable<DateTime>(createdAt);
+    map['dirty'] = Variable<bool>(dirty);
+    map['deleted'] = Variable<bool>(deleted);
     return map;
   }
 
@@ -2261,6 +2707,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
       icon: Value(icon),
       color: Value(color),
       createdAt: Value(createdAt),
+      dirty: Value(dirty),
+      deleted: Value(deleted),
     );
   }
 
@@ -2278,6 +2726,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
       icon: serializer.fromJson<String>(json['icon']),
       color: serializer.fromJson<int>(json['color']),
       createdAt: serializer.fromJson<DateTime>(json['createdAt']),
+      dirty: serializer.fromJson<bool>(json['dirty']),
+      deleted: serializer.fromJson<bool>(json['deleted']),
     );
   }
   @override
@@ -2292,6 +2742,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
       'icon': serializer.toJson<String>(icon),
       'color': serializer.toJson<int>(color),
       'createdAt': serializer.toJson<DateTime>(createdAt),
+      'dirty': serializer.toJson<bool>(dirty),
+      'deleted': serializer.toJson<bool>(deleted),
     };
   }
 
@@ -2304,6 +2756,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
     String? icon,
     int? color,
     DateTime? createdAt,
+    bool? dirty,
+    bool? deleted,
   }) => SavingsGoal(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -2313,6 +2767,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
     icon: icon ?? this.icon,
     color: color ?? this.color,
     createdAt: createdAt ?? this.createdAt,
+    dirty: dirty ?? this.dirty,
+    deleted: deleted ?? this.deleted,
   );
   SavingsGoal copyWithCompanion(SavingsGoalsCompanion data) {
     return SavingsGoal(
@@ -2330,6 +2786,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
       icon: data.icon.present ? data.icon.value : this.icon,
       color: data.color.present ? data.color.value : this.color,
       createdAt: data.createdAt.present ? data.createdAt.value : this.createdAt,
+      dirty: data.dirty.present ? data.dirty.value : this.dirty,
+      deleted: data.deleted.present ? data.deleted.value : this.deleted,
     );
   }
 
@@ -2343,7 +2801,9 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
           ..write('targetDate: $targetDate, ')
           ..write('icon: $icon, ')
           ..write('color: $color, ')
-          ..write('createdAt: $createdAt')
+          ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted')
           ..write(')'))
         .toString();
   }
@@ -2358,6 +2818,8 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
     icon,
     color,
     createdAt,
+    dirty,
+    deleted,
   );
   @override
   bool operator ==(Object other) =>
@@ -2370,7 +2832,9 @@ class SavingsGoal extends DataClass implements Insertable<SavingsGoal> {
           other.targetDate == this.targetDate &&
           other.icon == this.icon &&
           other.color == this.color &&
-          other.createdAt == this.createdAt);
+          other.createdAt == this.createdAt &&
+          other.dirty == this.dirty &&
+          other.deleted == this.deleted);
 }
 
 class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
@@ -2382,6 +2846,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
   final Value<String> icon;
   final Value<int> color;
   final Value<DateTime> createdAt;
+  final Value<bool> dirty;
+  final Value<bool> deleted;
   final Value<int> rowid;
   const SavingsGoalsCompanion({
     this.id = const Value.absent(),
@@ -2392,6 +2858,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
     this.icon = const Value.absent(),
     this.color = const Value.absent(),
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   });
   SavingsGoalsCompanion.insert({
@@ -2403,6 +2871,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
     required String icon,
     required int color,
     this.createdAt = const Value.absent(),
+    this.dirty = const Value.absent(),
+    this.deleted = const Value.absent(),
     this.rowid = const Value.absent(),
   }) : id = Value(id),
        name = Value(name),
@@ -2418,6 +2888,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
     Expression<String>? icon,
     Expression<int>? color,
     Expression<DateTime>? createdAt,
+    Expression<bool>? dirty,
+    Expression<bool>? deleted,
     Expression<int>? rowid,
   }) {
     return RawValuesInsertable({
@@ -2429,6 +2901,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
       if (icon != null) 'icon': icon,
       if (color != null) 'color': color,
       if (createdAt != null) 'created_at': createdAt,
+      if (dirty != null) 'dirty': dirty,
+      if (deleted != null) 'deleted': deleted,
       if (rowid != null) 'rowid': rowid,
     });
   }
@@ -2442,6 +2916,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
     Value<String>? icon,
     Value<int>? color,
     Value<DateTime>? createdAt,
+    Value<bool>? dirty,
+    Value<bool>? deleted,
     Value<int>? rowid,
   }) {
     return SavingsGoalsCompanion(
@@ -2453,6 +2929,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
       icon: icon ?? this.icon,
       color: color ?? this.color,
       createdAt: createdAt ?? this.createdAt,
+      dirty: dirty ?? this.dirty,
+      deleted: deleted ?? this.deleted,
       rowid: rowid ?? this.rowid,
     );
   }
@@ -2484,6 +2962,12 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
     if (createdAt.present) {
       map['created_at'] = Variable<DateTime>(createdAt.value);
     }
+    if (dirty.present) {
+      map['dirty'] = Variable<bool>(dirty.value);
+    }
+    if (deleted.present) {
+      map['deleted'] = Variable<bool>(deleted.value);
+    }
     if (rowid.present) {
       map['rowid'] = Variable<int>(rowid.value);
     }
@@ -2501,6 +2985,8 @@ class SavingsGoalsCompanion extends UpdateCompanion<SavingsGoal> {
           ..write('icon: $icon, ')
           ..write('color: $color, ')
           ..write('createdAt: $createdAt, ')
+          ..write('dirty: $dirty, ')
+          ..write('deleted: $deleted, ')
           ..write('rowid: $rowid')
           ..write(')'))
         .toString();
@@ -2538,6 +3024,8 @@ typedef $$AccountsTableCreateCompanionBuilder =
       Value<double> initialBalance,
       Value<double> currentBalance,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 typedef $$AccountsTableUpdateCompanionBuilder =
@@ -2550,6 +3038,8 @@ typedef $$AccountsTableUpdateCompanionBuilder =
       Value<double> initialBalance,
       Value<double> currentBalance,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 
@@ -2622,6 +3112,16 @@ class $$AccountsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -2699,6 +3199,16 @@ class $$AccountsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$AccountsTableAnnotationComposer
@@ -2737,6 +3247,12 @@ class $$AccountsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
 
   Expression<T> transactionsRefs<T extends Object>(
     Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
@@ -2800,6 +3316,8 @@ class $$AccountsTableTableManager
                 Value<double> initialBalance = const Value.absent(),
                 Value<double> currentBalance = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion(
                 id: id,
@@ -2810,6 +3328,8 @@ class $$AccountsTableTableManager
                 initialBalance: initialBalance,
                 currentBalance: currentBalance,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -2822,6 +3342,8 @@ class $$AccountsTableTableManager
                 Value<double> initialBalance = const Value.absent(),
                 Value<double> currentBalance = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => AccountsCompanion.insert(
                 id: id,
@@ -2832,6 +3354,8 @@ class $$AccountsTableTableManager
                 initialBalance: initialBalance,
                 currentBalance: currentBalance,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -2898,6 +3422,8 @@ typedef $$CategoriesTableCreateCompanionBuilder =
       required String icon,
       required int color,
       Value<bool> isDefault,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 typedef $$CategoriesTableUpdateCompanionBuilder =
@@ -2909,6 +3435,8 @@ typedef $$CategoriesTableUpdateCompanionBuilder =
       Value<String> icon,
       Value<int> color,
       Value<bool> isDefault,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 
@@ -2998,6 +3526,16 @@ class $$CategoriesTableFilterComposer
 
   ColumnFilters<bool> get isDefault => $composableBuilder(
     column: $table.isDefault,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3095,6 +3633,16 @@ class $$CategoriesTableOrderingComposer
     column: $table.isDefault,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$CategoriesTableAnnotationComposer
@@ -3126,6 +3674,12 @@ class $$CategoriesTableAnnotationComposer
 
   GeneratedColumn<bool> get isDefault =>
       $composableBuilder(column: $table.isDefault, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
 
   Expression<T> transactionsRefs<T extends Object>(
     Expression<T> Function($$TransactionsTableAnnotationComposer a) f,
@@ -3213,6 +3767,8 @@ class $$CategoriesTableTableManager
                 Value<String> icon = const Value.absent(),
                 Value<int> color = const Value.absent(),
                 Value<bool> isDefault = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion(
                 id: id,
@@ -3222,6 +3778,8 @@ class $$CategoriesTableTableManager
                 icon: icon,
                 color: color,
                 isDefault: isDefault,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3233,6 +3791,8 @@ class $$CategoriesTableTableManager
                 required String icon,
                 required int color,
                 Value<bool> isDefault = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => CategoriesCompanion.insert(
                 id: id,
@@ -3242,6 +3802,8 @@ class $$CategoriesTableTableManager
                 icon: icon,
                 color: color,
                 isDefault: isDefault,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3340,6 +3902,8 @@ typedef $$TransactionsTableCreateCompanionBuilder =
       Value<String> note,
       Value<String?> receiptPath,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 typedef $$TransactionsTableUpdateCompanionBuilder =
@@ -3355,6 +3919,8 @@ typedef $$TransactionsTableUpdateCompanionBuilder =
       Value<String> note,
       Value<String?> receiptPath,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 
@@ -3452,6 +4018,16 @@ class $$TransactionsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
     builder: (column) => ColumnFilters(column),
   );
 
@@ -3556,6 +4132,16 @@ class $$TransactionsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$AccountsTableOrderingComposer get accountId {
     final $$AccountsTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -3645,6 +4231,12 @@ class $$TransactionsTableAnnotationComposer
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
 
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
+
   $$AccountsTableAnnotationComposer get accountId {
     final $$AccountsTableAnnotationComposer composer = $composerBuilder(
       composer: this,
@@ -3731,6 +4323,8 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<String?> receiptPath = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion(
                 id: id,
@@ -3744,6 +4338,8 @@ class $$TransactionsTableTableManager
                 note: note,
                 receiptPath: receiptPath,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -3759,6 +4355,8 @@ class $$TransactionsTableTableManager
                 Value<String> note = const Value.absent(),
                 Value<String?> receiptPath = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => TransactionsCompanion.insert(
                 id: id,
@@ -3772,6 +4370,8 @@ class $$TransactionsTableTableManager
                 note: note,
                 receiptPath: receiptPath,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -3861,6 +4461,8 @@ typedef $$BudgetsTableCreateCompanionBuilder =
       required int month,
       required int year,
       required double limitAmount,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 typedef $$BudgetsTableUpdateCompanionBuilder =
@@ -3870,6 +4472,8 @@ typedef $$BudgetsTableUpdateCompanionBuilder =
       Value<int> month,
       Value<int> year,
       Value<double> limitAmount,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 
@@ -3926,6 +4530,16 @@ class $$BudgetsTableFilterComposer
     builder: (column) => ColumnFilters(column),
   );
 
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnFilters(column),
+  );
+
   $$CategoriesTableFilterComposer get categoryId {
     final $$CategoriesTableFilterComposer composer = $composerBuilder(
       composer: this,
@@ -3979,6 +4593,16 @@ class $$BudgetsTableOrderingComposer
     builder: (column) => ColumnOrderings(column),
   );
 
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
+
   $$CategoriesTableOrderingComposer get categoryId {
     final $$CategoriesTableOrderingComposer composer = $composerBuilder(
       composer: this,
@@ -4025,6 +4649,12 @@ class $$BudgetsTableAnnotationComposer
     column: $table.limitAmount,
     builder: (column) => column,
   );
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
 
   $$CategoriesTableAnnotationComposer get categoryId {
     final $$CategoriesTableAnnotationComposer composer = $composerBuilder(
@@ -4083,6 +4713,8 @@ class $$BudgetsTableTableManager
                 Value<int> month = const Value.absent(),
                 Value<int> year = const Value.absent(),
                 Value<double> limitAmount = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion(
                 id: id,
@@ -4090,6 +4722,8 @@ class $$BudgetsTableTableManager
                 month: month,
                 year: year,
                 limitAmount: limitAmount,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4099,6 +4733,8 @@ class $$BudgetsTableTableManager
                 required int month,
                 required int year,
                 required double limitAmount,
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => BudgetsCompanion.insert(
                 id: id,
@@ -4106,6 +4742,8 @@ class $$BudgetsTableTableManager
                 month: month,
                 year: year,
                 limitAmount: limitAmount,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0
@@ -4185,6 +4823,8 @@ typedef $$SavingsGoalsTableCreateCompanionBuilder =
       required String icon,
       required int color,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 typedef $$SavingsGoalsTableUpdateCompanionBuilder =
@@ -4197,6 +4837,8 @@ typedef $$SavingsGoalsTableUpdateCompanionBuilder =
       Value<String> icon,
       Value<int> color,
       Value<DateTime> createdAt,
+      Value<bool> dirty,
+      Value<bool> deleted,
       Value<int> rowid,
     });
 
@@ -4246,6 +4888,16 @@ class $$SavingsGoalsTableFilterComposer
 
   ColumnFilters<DateTime> get createdAt => $composableBuilder(
     column: $table.createdAt,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnFilters(column),
+  );
+
+  ColumnFilters<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
     builder: (column) => ColumnFilters(column),
   );
 }
@@ -4298,6 +4950,16 @@ class $$SavingsGoalsTableOrderingComposer
     column: $table.createdAt,
     builder: (column) => ColumnOrderings(column),
   );
+
+  ColumnOrderings<bool> get dirty => $composableBuilder(
+    column: $table.dirty,
+    builder: (column) => ColumnOrderings(column),
+  );
+
+  ColumnOrderings<bool> get deleted => $composableBuilder(
+    column: $table.deleted,
+    builder: (column) => ColumnOrderings(column),
+  );
 }
 
 class $$SavingsGoalsTableAnnotationComposer
@@ -4338,6 +5000,12 @@ class $$SavingsGoalsTableAnnotationComposer
 
   GeneratedColumn<DateTime> get createdAt =>
       $composableBuilder(column: $table.createdAt, builder: (column) => column);
+
+  GeneratedColumn<bool> get dirty =>
+      $composableBuilder(column: $table.dirty, builder: (column) => column);
+
+  GeneratedColumn<bool> get deleted =>
+      $composableBuilder(column: $table.deleted, builder: (column) => column);
 }
 
 class $$SavingsGoalsTableTableManager
@@ -4379,6 +5047,8 @@ class $$SavingsGoalsTableTableManager
                 Value<String> icon = const Value.absent(),
                 Value<int> color = const Value.absent(),
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SavingsGoalsCompanion(
                 id: id,
@@ -4389,6 +5059,8 @@ class $$SavingsGoalsTableTableManager
                 icon: icon,
                 color: color,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           createCompanionCallback:
@@ -4401,6 +5073,8 @@ class $$SavingsGoalsTableTableManager
                 required String icon,
                 required int color,
                 Value<DateTime> createdAt = const Value.absent(),
+                Value<bool> dirty = const Value.absent(),
+                Value<bool> deleted = const Value.absent(),
                 Value<int> rowid = const Value.absent(),
               }) => SavingsGoalsCompanion.insert(
                 id: id,
@@ -4411,6 +5085,8 @@ class $$SavingsGoalsTableTableManager
                 icon: icon,
                 color: color,
                 createdAt: createdAt,
+                dirty: dirty,
+                deleted: deleted,
                 rowid: rowid,
               ),
           withReferenceMapper: (p0) => p0

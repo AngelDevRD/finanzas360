@@ -157,6 +157,8 @@ class _BudgetFormSheetState extends ConsumerState<BudgetFormSheet> {
           month: now.month,
           year: now.year,
           limitAmount: amount,
+          dirty: true,
+          deleted: false,
         ),
       );
     }

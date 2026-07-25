@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/storage_mode.dart';
-import '../../categories/data/categories_repository.dart';
 import '../data/auth_repository.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -53,10 +52,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
           email: _emailController.text.trim(),
           password: _passwordController.text,
         );
-        final categoriesRepo = ref.read(categoriesRepositoryProvider);
-        if (categoriesRepo is RemoteCategoriesRepository) {
-          await categoriesRepo.seedDefaultsIfEmpty();
-        }
       }
     } on AuthException catch (e) {
       if (mounted) {

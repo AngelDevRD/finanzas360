@@ -74,6 +74,9 @@ dependencies:
   # Backend en la nube (modo nube: auth + almacenamiento remoto)
   supabase_flutter: ^2.8.0
 
+  # Deteccion de conectividad (dispara sync al recuperar red)
+  connectivity_plus: ^6.1.0
+
   # Version de la app para el panel de ajustes
   package_info_plus: ^8.1.2
 

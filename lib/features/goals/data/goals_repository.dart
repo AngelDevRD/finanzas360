@@ -1,41 +1,55 @@
 import 'package:drift/drift.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/database/database_provider.dart';
-import '../../../core/storage_mode.dart';
-import '../../auth/data/auth_repository.dart';
 
-abstract class GoalsRepository {
-  Stream<List<SavingsGoal>> watchAll();
-  Future<void> create(SavingsGoal goal);
-  Future<void> update(SavingsGoal goal);
-  Future<void> delete(String id);
-  Future<void> addContribution(String goalId, double amount);
-}
-
-class LocalGoalsRepository implements GoalsRepository {
-  LocalGoalsRepository(this._db);
+/// Persistencia de metas de ahorro: siempre local (Drift) -- ver
+/// AccountsRepository para el detalle del patron dirty/soft-delete + sync.
+class GoalsRepository {
+  GoalsRepository(this._db);
 
   final AppDatabase _db;
 
-  @override
-  Stream<List<SavingsGoal>> watchAll() => _db.select(_db.savingsGoals).watch();
+  Stream<List<SavingsGoal>> watchAll() {
+    return (_db.select(
+      _db.savingsGoals,
+    )..where((g) => g.deleted.equals(false))).watch();
+  }
 
-  @override
-  Future<void> create(SavingsGoal goal) =>
-      _db.into(_db.savingsGoals).insert(goal);
+  Future<void> create(SavingsGoal goal) => _db
+      .into(_db.savingsGoals)
+      .insert(
+        SavingsGoalsCompanion.insert(
+          id: goal.id,
+          name: goal.name,
+          targetAmount: goal.targetAmount,
+          currentAmount: Value(goal.currentAmount),
+          targetDate: Value(goal.targetDate),
+          icon: goal.icon,
+          color: goal.color,
+          createdAt: Value(goal.createdAt),
+        ),
+      );
 
-  @override
   Future<void> update(SavingsGoal goal) =>
-      _db.update(_db.savingsGoals).replace(goal);
+      (_db.update(_db.savingsGoals)..where((g) => g.id.equals(goal.id))).write(
+        SavingsGoalsCompanion(
+          name: Value(goal.name),
+          targetAmount: Value(goal.targetAmount),
+          currentAmount: Value(goal.currentAmount),
+          targetDate: Value(goal.targetDate),
+          icon: Value(goal.icon),
+          color: Value(goal.color),
+          dirty: const Value(true),
+        ),
+      );
 
-  @override
   Future<void> delete(String id) =>
-      (_db.delete(_db.savingsGoals)..where((g) => g.id.equals(id))).go();
+      (_db.update(_db.savingsGoals)..where((g) => g.id.equals(id))).write(
+        const SavingsGoalsCompanion(deleted: Value(true), dirty: Value(true)),
+      );
 
-  @override
   Future<void> addContribution(String goalId, double amount) async {
     final goal = await (_db.select(
       _db.savingsGoals,
@@ -44,87 +58,16 @@ class LocalGoalsRepository implements GoalsRepository {
     await (_db.update(
       _db.savingsGoals,
     )..where((g) => g.id.equals(goalId))).write(
-      SavingsGoalsCompanion(currentAmount: Value(goal.currentAmount + amount)),
+      SavingsGoalsCompanion(
+        currentAmount: Value(goal.currentAmount + amount),
+        dirty: const Value(true),
+      ),
     );
   }
 }
 
-class RemoteGoalsRepository implements GoalsRepository {
-  RemoteGoalsRepository(this._client, this._userId);
-
-  final SupabaseClient _client;
-  final String _userId;
-
-  static const _table = 'finanzas360_savings_goals';
-
-  SavingsGoal _fromRow(Map<String, dynamic> row) => SavingsGoal(
-    id: row['id'] as String,
-    name: row['name'] as String,
-    targetAmount: (row['target_amount'] as num).toDouble(),
-    currentAmount: (row['current_amount'] as num).toDouble(),
-    targetDate: row['target_date'] == null
-        ? null
-        : DateTime.parse(row['target_date'] as String),
-    icon: row['icon'] as String,
-    color: (row['color'] as num).toInt(),
-    createdAt: DateTime.parse(row['created_at'] as String),
-  );
-
-  Map<String, dynamic> _toRow(SavingsGoal goal) => {
-    'id': goal.id,
-    'user_id': _userId,
-    'name': goal.name,
-    'target_amount': goal.targetAmount,
-    'current_amount': goal.currentAmount,
-    'target_date': goal.targetDate?.toIso8601String(),
-    'icon': goal.icon,
-    'color': goal.color,
-  };
-
-  @override
-  Stream<List<SavingsGoal>> watchAll() {
-    return _client
-        .from(_table)
-        .stream(primaryKey: ['id'])
-        .eq('user_id', _userId)
-        .map((rows) => rows.map(_fromRow).toList());
-  }
-
-  @override
-  Future<void> create(SavingsGoal goal) =>
-      _client.from(_table).insert(_toRow(goal));
-
-  @override
-  Future<void> update(SavingsGoal goal) =>
-      _client.from(_table).update(_toRow(goal)).eq('id', goal.id);
-
-  @override
-  Future<void> delete(String id) => _client.from(_table).delete().eq('id', id);
-
-  @override
-  Future<void> addContribution(String goalId, double amount) async {
-    final row = await _client
-        .from(_table)
-        .select()
-        .eq('id', goalId)
-        .maybeSingle();
-    if (row == null) return;
-    final goal = _fromRow(row);
-    await _client
-        .from(_table)
-        .update({'current_amount': goal.currentAmount + amount})
-        .eq('id', goalId);
-  }
-}
-
 final goalsRepositoryProvider = Provider<GoalsRepository>((ref) {
-  if (ref.watch(storageModeProvider) == StorageMode.cloud) {
-    final user = ref.watch(currentUserProvider);
-    if (user != null) {
-      return RemoteGoalsRepository(Supabase.instance.client, user.id);
-    }
-  }
-  return LocalGoalsRepository(ref.watch(databaseProvider));
+  return GoalsRepository(ref.watch(databaseProvider));
 });
 
 final goalsStreamProvider = StreamProvider<List<SavingsGoal>>((ref) {

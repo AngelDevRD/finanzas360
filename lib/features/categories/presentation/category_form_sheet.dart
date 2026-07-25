@@ -149,6 +149,8 @@ class _CategoryFormSheetState extends ConsumerState<CategoryFormSheet> {
           icon: _icon,
           color: _color,
           isDefault: false,
+          dirty: true,
+          deleted: false,
         ),
       );
     }

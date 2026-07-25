@@ -185,6 +185,8 @@ class _GoalFormSheetState extends ConsumerState<GoalFormSheet> {
           icon: _icon,
           color: _color,
           createdAt: DateTime.now(),
+          dirty: true,
+          deleted: false,
         ),
       );
     }

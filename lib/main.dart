@@ -8,6 +8,7 @@ import 'app/theme.dart';
 import 'core/app_updater.dart';
 import 'core/storage_mode.dart';
 import 'core/supabase_config.dart';
+import 'core/sync/sync_provider.dart';
 import 'features/auth/data/auth_repository.dart';
 import 'features/auth/presentation/login_screen.dart';
 
@@ -39,6 +40,8 @@ class MyApp extends ConsumerWidget {
     final needsLogin =
         storageMode == StorageMode.cloud &&
         ref.watch(currentUserProvider) == null;
+    // Mantiene vivo el SyncEngine mientras este widget exista (toda la app).
+    ref.watch(syncEngineProvider);
 
     if (!_updateChecked) {
       _updateChecked = true;

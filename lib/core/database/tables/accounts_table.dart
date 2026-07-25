@@ -9,6 +9,8 @@ class Accounts extends Table {
   RealColumn get initialBalance => real().withDefault(const Constant(0))();
   RealColumn get currentBalance => real().withDefault(const Constant(0))();
   DateTimeColumn get createdAt => dateTime().withDefault(currentDateAndTime)();
+  BoolColumn get dirty => boolean().withDefault(const Constant(true))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};

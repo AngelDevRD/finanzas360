@@ -126,6 +126,8 @@ class _AccountFormSheetState extends ConsumerState<AccountFormSheet> {
           initialBalance: balance,
           currentBalance: balance,
           createdAt: DateTime.now(),
+          dirty: true,
+          deleted: false,
         ),
       );
     }

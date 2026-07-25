@@ -5,6 +5,7 @@ import 'package:package_info_plus/package_info_plus.dart';
 import '../../../app/theme.dart';
 import '../../../core/currency.dart';
 import '../../../core/storage_mode.dart';
+import '../../../core/sync/sync_settings.dart';
 import '../../auth/data/auth_repository.dart';
 
 final _packageInfoProvider = FutureProvider<PackageInfo>((ref) {
@@ -98,6 +99,7 @@ class SettingsScreen extends ConsumerWidget {
             ),
           ),
           if (storageMode == StorageMode.cloud) const _AccountTile(),
+          if (storageMode == StorageMode.cloud) const _SyncFrequencyTile(),
           const Divider(),
           const _SectionHeader('Acerca de'),
           ListTile(
@@ -130,6 +132,35 @@ class _AccountTile extends ConsumerWidget {
       trailing: TextButton(
         onPressed: () => ref.read(authRepositoryProvider).signOut(),
         child: const Text('Cerrar sesion'),
+      ),
+    );
+  }
+}
+
+class _SyncFrequencyTile extends ConsumerWidget {
+  const _SyncFrequencyTile();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final frequency = ref.watch(syncFrequencyProvider);
+    return ListTile(
+      leading: const Icon(Icons.sync_outlined),
+      title: const Text('Frecuencia de sync'),
+      subtitle: const Text(
+        'Tus datos siempre se guardan primero en el telefono; esto define '
+        'cada cuanto se suben a la nube.',
+      ),
+      trailing: DropdownButton<SyncFrequency>(
+        value: frequency,
+        underline: const SizedBox.shrink(),
+        items: SyncFrequency.values
+            .map((f) => DropdownMenuItem(value: f, child: Text(f.label)))
+            .toList(),
+        onChanged: (f) {
+          if (f != null) {
+            ref.read(syncFrequencyProvider.notifier).setFrequency(f);
+          }
+        },
       ),
     );
   }

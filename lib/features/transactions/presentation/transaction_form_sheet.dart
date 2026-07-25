@@ -254,6 +254,8 @@ class _TransactionFormSheetState extends ConsumerState<TransactionFormSheet> {
       note: _noteController.text.trim(),
       receiptPath: widget.existing?.receiptPath,
       createdAt: widget.existing?.createdAt ?? DateTime.now(),
+      dirty: true,
+      deleted: false,
     );
 
     if (widget.existing != null) {

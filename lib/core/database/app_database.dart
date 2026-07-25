@@ -21,13 +21,29 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 1;
+  int get schemaVersion => 2;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
     onCreate: (m) async {
       await m.createAll();
       await _seedDefaultCategories();
+    },
+    onUpgrade: (m, from, to) async {
+      if (from < 2) {
+        // v2: soporte de sync (SyncEngine) -- filas existentes se marcan
+        // dirty para que la primera pasada de sync las suba.
+        await m.addColumn(accounts, accounts.dirty);
+        await m.addColumn(accounts, accounts.deleted);
+        await m.addColumn(categories, categories.dirty);
+        await m.addColumn(categories, categories.deleted);
+        await m.addColumn(budgets, budgets.dirty);
+        await m.addColumn(budgets, budgets.deleted);
+        await m.addColumn(savingsGoals, savingsGoals.dirty);
+        await m.addColumn(savingsGoals, savingsGoals.deleted);
+        await m.addColumn(transactions, transactions.dirty);
+        await m.addColumn(transactions, transactions.deleted);
+      }
     },
   );
 

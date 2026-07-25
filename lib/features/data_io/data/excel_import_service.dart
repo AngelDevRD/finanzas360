@@ -349,6 +349,8 @@ class ExcelImportService {
         icon: 'category',
         color: _defaultCategoryColor,
         isDefault: false,
+        dirty: true,
+        deleted: false,
       );
       await categoriesRepo.create(created);
       categoryByKey[key] = created;
@@ -370,6 +372,8 @@ class ExcelImportService {
         initialBalance: 0,
         currentBalance: 0,
         createdAt: DateTime.now(),
+        dirty: true,
+        deleted: false,
       );
       await accountsRepo.create(defaultAccount);
     }
@@ -391,6 +395,8 @@ class ExcelImportService {
           note: '',
           receiptPath: null,
           createdAt: DateTime.now(),
+          dirty: true,
+          deleted: false,
         ),
       );
       transactionsImported++;
@@ -407,6 +413,8 @@ class ExcelImportService {
           month: now.month,
           year: now.year,
           limitAmount: b.limitAmount,
+          dirty: true,
+          deleted: false,
         ),
       );
       budgetsImported++;
@@ -424,6 +432,8 @@ class ExcelImportService {
           icon: 'savings',
           color: _defaultCategoryColor,
           createdAt: DateTime.now(),
+          dirty: true,
+          deleted: false,
         ),
       );
       goalsImported++;

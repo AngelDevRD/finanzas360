@@ -8,6 +8,8 @@ class Budgets extends Table {
   IntColumn get month => integer()();
   IntColumn get year => integer()();
   RealColumn get limitAmount => real()();
+  BoolColumn get dirty => boolean().withDefault(const Constant(true))();
+  BoolColumn get deleted => boolean().withDefault(const Constant(false))();
 
   @override
   Set<Column> get primaryKey => {id};
