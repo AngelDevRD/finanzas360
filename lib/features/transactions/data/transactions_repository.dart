@@ -95,7 +95,7 @@ class RemoteTransactionsRepository implements TransactionsRepository {
   final String _userId;
   final AccountsRepository _accountsRepository;
 
-  static const _table = 'transactions';
+  static const _table = 'finanzas360_transactions';
 
   Transaction _fromRow(Map<String, dynamic> row) => Transaction(
     id: row['id'] as String,

@@ -14,10 +14,12 @@ import 'features/auth/presentation/login_screen.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('es');
-  await Supabase.initialize(
-    url: SupabaseConfig.url,
-    publishableKey: SupabaseConfig.publishableKey,
-  );
+  if (SupabaseConfig.configurado) {
+    await Supabase.initialize(
+      url: SupabaseConfig.url,
+      publishableKey: SupabaseConfig.publishableKey,
+    );
+  }
   runApp(const ProviderScope(child: MyApp()));
 }
 

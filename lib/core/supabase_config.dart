@@ -1,10 +1,13 @@
-/// Configuracion del proyecto Supabase de Finanzas 360 (modo nube).
+/// Configuracion del proyecto Supabase de Finanzas 360 (modo nube), inyectada
+/// en build time (AG-CORE-004: las claves nunca van en el código):
+///   flutter build apk --dart-define=SUPABASE_URL=... --dart-define=SUPABASE_ANON_KEY=...
 ///
-/// La anon key es publica por diseno (protegida por RLS en el backend, no es
-/// un secreto) -- por eso se puede commitear, igual que google-services.json
-/// en un proyecto Firebase.
-class SupabaseConfig {
-  static const url = 'https://hdvjzzgyoukalxrfgvhx.supabase.co';
-  static const publishableKey =
-      'sb_publishable_UyY0WjwD8Q3JF8ruIV-NXw_5kzNs2js';
+/// Sin estas variables la app funciona igual en modo local (ver
+/// StorageMode.local en storage_mode.dart) -- main.dart solo inicializa
+/// Supabase cuando [configurado] es true.
+abstract final class SupabaseConfig {
+  static const url = String.fromEnvironment('SUPABASE_URL');
+  static const publishableKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+
+  static bool get configurado => url.isNotEmpty && publishableKey.isNotEmpty;
 }

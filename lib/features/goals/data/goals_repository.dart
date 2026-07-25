@@ -55,7 +55,7 @@ class RemoteGoalsRepository implements GoalsRepository {
   final SupabaseClient _client;
   final String _userId;
 
-  static const _table = 'savings_goals';
+  static const _table = 'finanzas360_savings_goals';
 
   SavingsGoal _fromRow(Map<String, dynamic> row) => SavingsGoal(
     id: row['id'] as String,

@@ -1,0 +1,93 @@
+name: Release
+
+# Reemplaza a codemagic.yaml (nunca conectada como app en Codemagic, sin builds
+# reales). Requiere los secrets SUPABASE_URL y SUPABASE_ANON_KEY configurados en
+# Settings > Secrets and variables > Actions de este repo.
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter pub get
+
+      - run: flutter test
+
+      - name: Compilar APK (release)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build apk --release \
+            --dart-define=SUPABASE_URL=$SUPABASE_URL \
+            --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
+
+      - name: Calcular tag desde pubspec.yaml
+        id: tag
+        run: |
+          version=$(grep '^version:' pubspec.yaml | sed 's/version: *//' | cut -d'+' -f1)
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+
+      - run: flutter config --enable-windows-desktop
+
+      - run: flutter pub get
+
+      - name: Compilar Windows (release)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+        run: |
+          flutter build windows --release `
+            --dart-define=SUPABASE_URL=$env:SUPABASE_URL `
+            --dart-define=SUPABASE_ANON_KEY=$env:SUPABASE_ANON_KEY
+        shell: pwsh
+
+      - name: Empaquetar build de Windows
+        shell: pwsh
+        run: Compress-Archive -Path build/windows/x64/runner/Release/* -DestinationPath finanzas360-windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows-zip
+          path: finanzas360-windows.zip
+
+  release:
+    needs: [build-android, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.build-android.outputs.tag }}
+          generate_release_notes: true
+          files: |
+            android-apk/app-release.apk
+            windows-zip/finanzas360-windows.zip

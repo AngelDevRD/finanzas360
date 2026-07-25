@@ -63,7 +63,7 @@ class RemoteAccountsRepository implements AccountsRepository {
   final SupabaseClient _client;
   final String _userId;
 
-  static const _table = 'accounts';
+  static const _table = 'finanzas360_accounts';
 
   Account _fromRow(Map<String, dynamic> row) => Account(
     id: row['id'] as String,

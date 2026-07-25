@@ -43,7 +43,7 @@ class RemoteBudgetsRepository implements BudgetsRepository {
   final SupabaseClient _client;
   final String _userId;
 
-  static const _table = 'budgets';
+  static const _table = 'finanzas360_budgets';
 
   Budget _fromRow(Map<String, dynamic> row) => Budget(
     id: row['id'] as String,

@@ -46,7 +46,7 @@ class RemoteCategoriesRepository implements CategoriesRepository {
   final SupabaseClient _client;
   final String _userId;
 
-  static const _table = 'categories';
+  static const _table = 'finanzas360_categories';
 
   Category _fromRow(Map<String, dynamic> row) => Category(
     id: row['id'] as String,
