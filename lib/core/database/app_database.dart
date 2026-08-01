@@ -9,19 +9,20 @@ import 'seed/default_categories.dart';
 import 'tables/accounts_table.dart';
 import 'tables/budgets_table.dart';
 import 'tables/categories_table.dart';
+import 'tables/debts_table.dart';
 import 'tables/savings_goals_table.dart';
 import 'tables/transactions_table.dart';
 
 part 'app_database.g.dart';
 
 @DriftDatabase(
-  tables: [Accounts, Categories, Transactions, Budgets, SavingsGoals],
+  tables: [Accounts, Categories, Transactions, Budgets, SavingsGoals, Debts],
 )
 class AppDatabase extends _$AppDatabase {
   AppDatabase([QueryExecutor? executor]) : super(executor ?? _openConnection());
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -43,6 +44,10 @@ class AppDatabase extends _$AppDatabase {
         await m.addColumn(savingsGoals, savingsGoals.deleted);
         await m.addColumn(transactions, transactions.dirty);
         await m.addColumn(transactions, transactions.deleted);
+      }
+      if (from < 3) {
+        // v3: pantalla de Deudas.
+        await m.createTable(debts);
       }
     },
   );

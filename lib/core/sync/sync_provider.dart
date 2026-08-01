@@ -8,6 +8,7 @@ import '../supabase_config.dart';
 import 'entities/account_syncable.dart';
 import 'entities/budget_syncable.dart';
 import 'entities/category_syncable.dart';
+import 'entities/debt_syncable.dart';
 import 'entities/savings_goal_syncable.dart';
 import 'entities/transaction_syncable.dart';
 import 'sync_engine.dart';
@@ -40,6 +41,7 @@ final syncEngineProvider = Provider<SyncEngine?>((ref) {
       BudgetSyncable(client),
       SavingsGoalSyncable(client),
       TransactionSyncable(client),
+      DebtSyncable(client),
     ],
   )..start();
 
