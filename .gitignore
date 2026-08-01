@@ -50,3 +50,8 @@ app.*.map.json
 
 # Build output de Gradle (android/build, distinto de /build de Flutter)
 /android/build/
+
+# Firma de release Android (se genera en CI desde secrets, nunca se sube)
+/android/key.properties
+*.jks
+*.keystore

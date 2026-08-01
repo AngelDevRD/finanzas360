@@ -1,8 +1,12 @@
 name: Release
 
 # Reemplaza a codemagic.yaml (nunca conectada como app en Codemagic, sin builds
-# reales). Requiere los secrets SUPABASE_URL y SUPABASE_ANON_KEY configurados en
-# Settings > Secrets and variables > Actions de este repo.
+# reales). Requiere los secrets SUPABASE_URL, SUPABASE_ANON_KEY,
+# ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS y
+# ANDROID_KEY_PASSWORD configurados en Settings > Secrets and variables >
+# Actions de este repo. Los ANDROID_* firman el APK release con una llave
+# estable -- sin ellos, Android rechaza instalar una version nueva encima de
+# una anterior (ver commit que agrego esto).
 on:
   push:
     branches: [master]
@@ -25,6 +29,21 @@ jobs:
       - run: flutter pub get
 
       - run: flutter test
+
+      - name: Restaurar keystore de firma release
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > android/app/release.jks
+          cat > android/key.properties <<EOF
+          storeFile=release.jks
+          storePassword=$ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ANDROID_KEY_ALIAS
+          keyPassword=$ANDROID_KEY_PASSWORD
+          EOF
 
       - name: Compilar APK (release)
         env:
