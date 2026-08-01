@@ -25,7 +25,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Inicio'), findsOneWidget);
 
     // Desmontar el árbol explícitamente y dejar correr un frame mas: así el
     // timer de cierre que Drift crea al cancelar el stream (en el dispose
