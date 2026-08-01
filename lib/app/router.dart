@@ -2,6 +2,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/budgets/presentation/budgets_screen.dart';
 import '../features/dashboard/presentation/dashboard_screen.dart';
+import '../features/debts/presentation/debts_screen.dart';
 import '../features/goals/presentation/goals_screen.dart';
 import '../features/more/presentation/more_screen.dart';
 import '../features/transactions/presentation/transactions_screen.dart';
@@ -15,6 +16,14 @@ final appRouter = GoRouter(
         return AppShell(navigationShell: navigationShell);
       },
       branches: [
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/more',
+              builder: (context, state) => const MoreScreen(),
+            ),
+          ],
+        ),
         StatefulShellBranch(
           routes: [
             GoRoute(
@@ -50,8 +59,8 @@ final appRouter = GoRouter(
         StatefulShellBranch(
           routes: [
             GoRoute(
-              path: '/more',
-              builder: (context, state) => const MoreScreen(),
+              path: '/debts',
+              builder: (context, state) => const DebtsScreen(),
             ),
           ],
         ),

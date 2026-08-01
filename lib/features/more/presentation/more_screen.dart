@@ -4,7 +4,6 @@ import '../../accounts/presentation/accounts_screen.dart';
 import '../../assistant/presentation/assistant_screen.dart';
 import '../../categories/presentation/categories_screen.dart';
 import '../../data_io/presentation/data_io_screen.dart';
-import '../../debts/presentation/debts_screen.dart';
 import '../../settings/presentation/settings_screen.dart';
 
 class MoreScreen extends StatelessWidget {
@@ -31,14 +30,6 @@ class MoreScreen extends StatelessWidget {
             onTap: () => Navigator.of(
               context,
             ).push(MaterialPageRoute(builder: (_) => const CategoriesScreen())),
-          ),
-          ListTile(
-            leading: const Icon(Icons.money_off_outlined),
-            title: const Text('Deudas'),
-            trailing: const Icon(Icons.chevron_right),
-            onTap: () => Navigator.of(
-              context,
-            ).push(MaterialPageRoute(builder: (_) => const DebtsScreen())),
           ),
           ListTile(
             leading: const Icon(Icons.swap_vert),

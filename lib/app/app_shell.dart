@@ -18,9 +18,14 @@ class AppShell extends StatelessWidget {
         ),
         destinations: const [
           NavigationDestination(
+            icon: Icon(Icons.more_horiz),
+            selectedIcon: Icon(Icons.more_horiz),
+            label: 'Más',
+          ),
+          NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
             selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: 'Inicio',
           ),
           NavigationDestination(
             icon: Icon(Icons.swap_horiz_outlined),
@@ -38,9 +43,9 @@ class AppShell extends StatelessWidget {
             label: 'Metas',
           ),
           NavigationDestination(
-            icon: Icon(Icons.more_horiz),
-            selectedIcon: Icon(Icons.more_horiz),
-            label: 'Más',
+            icon: Icon(Icons.money_off_outlined),
+            selectedIcon: Icon(Icons.money_off),
+            label: 'Deudas',
           ),
         ],
       ),
