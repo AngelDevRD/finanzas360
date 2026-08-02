@@ -37,6 +37,9 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
   late final _nameController = TextEditingController(
     text: widget.existing?.name ?? '',
   );
+  late final _descriptionController = TextEditingController(
+    text: widget.existing?.description ?? '',
+  );
   late final _totalController = TextEditingController(
     text: widget.existing != null
         ? widget.existing!.totalAmount.toString()
@@ -77,6 +80,14 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
               decoration: const InputDecoration(labelText: 'Nombre'),
               validator: (v) =>
                   (v == null || v.trim().isEmpty) ? 'Requerido' : null,
+            ),
+            const SizedBox(height: 12),
+            TextFormField(
+              controller: _descriptionController,
+              decoration: const InputDecoration(
+                labelText: 'Descripción (opcional)',
+              ),
+              maxLines: 2,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -184,11 +195,13 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
     final repo = ref.read(debtsRepositoryProvider);
     final total = double.parse(_totalController.text);
     final remaining = double.parse(_remainingController.text);
+    final description = _descriptionController.text.trim();
 
     if (widget.existing != null) {
       await repo.update(
         widget.existing!.copyWith(
           name: _nameController.text.trim(),
+          description: Value(description.isEmpty ? null : description),
           totalAmount: total,
           remainingAmount: remaining,
           dueDate: Value(_dueDate),
@@ -201,6 +214,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
         Debt(
           id: const Uuid().v4(),
           name: _nameController.text.trim(),
+          description: description.isEmpty ? null : description,
           totalAmount: total,
           remainingAmount: remaining,
           dueDate: _dueDate,
@@ -218,6 +232,7 @@ class _DebtFormSheetState extends ConsumerState<DebtFormSheet> {
   @override
   void dispose() {
     _nameController.dispose();
+    _descriptionController.dispose();
     _totalController.dispose();
     _remainingController.dispose();
     super.dispose();

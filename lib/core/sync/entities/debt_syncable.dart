@@ -32,6 +32,7 @@ class DebtSyncable implements SyncableEntity {
         'id': debt.id,
         'user_id': userId,
         'name': debt.name,
+        'description': debt.description,
         'total_amount': debt.totalAmount,
         'remaining_amount': debt.remainingAmount,
         'due_date': debt.dueDate?.toIso8601String(),

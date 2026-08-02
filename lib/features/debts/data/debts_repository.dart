@@ -22,6 +22,7 @@ class DebtsRepository {
         DebtsCompanion.insert(
           id: debt.id,
           name: debt.name,
+          description: Value(debt.description),
           totalAmount: debt.totalAmount,
           remainingAmount: debt.remainingAmount,
           dueDate: Value(debt.dueDate),
@@ -35,6 +36,7 @@ class DebtsRepository {
       (_db.update(_db.debts)..where((d) => d.id.equals(debt.id))).write(
         DebtsCompanion(
           name: Value(debt.name),
+          description: Value(debt.description),
           totalAmount: Value(debt.totalAmount),
           remainingAmount: Value(debt.remainingAmount),
           dueDate: Value(debt.dueDate),

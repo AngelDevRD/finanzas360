@@ -89,6 +89,15 @@ class DebtsScreen extends ConsumerWidget {
                           ),
                         ],
                       ),
+                      if (debt.description != null &&
+                          debt.description!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          debt.description!,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(color: Colors.grey.shade600),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       LabeledProgressBar(
                         progress: progress,
