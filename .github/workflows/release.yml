@@ -176,11 +176,32 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
 
-      - uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ needs.version.outputs.tag }}
-          target_commitish: ${{ github.sha }}
-          generate_release_notes: true
-          files: |
-            android-apk/finanzas360-android.apk
-            windows-zip/finanzas360-windows.zip
+      # Se usa gh (Go, preinstalado en el runner) en vez de softprops/action-gh-release:
+      # con Node 24 por defecto en los runners esa accion aborta la subida de assets grandes
+      # (~50 MB) a los ~28 s con "Headers Timeout Error", dejando el release en draft y vacio.
+      - name: Publicar release con los assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.version.outputs.tag }}
+        run: |
+          set -euo pipefail
+          if ! gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --draft \
+              --target "$GITHUB_SHA" --title "$TAG" --generate-notes
+          fi
+          for intento in 1 2 3; do
+            if gh release upload "$TAG" --repo "$GITHUB_REPOSITORY" --clobber \
+              android-apk/finanzas360-android.apk \
+              windows-zip/finanzas360-windows.zip; then
+              break
+            fi
+            if [ "$intento" = 3 ]; then
+              echo "::error::No se pudieron subir los assets tras 3 intentos."
+              exit 1
+            fi
+            echo "Subida fallida (intento $intento); reintentando en 15 s..."
+            sleep 15
+          done
+          # Se publica solo cuando el release ya tiene la APK: un draft a medias lo ignora
+          # el portafolio, que sigue sirviendo la version anterior completa.
+          gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false

@@ -40,7 +40,7 @@ function compareSemver(a, b) {
 
 async function fetchLatestPublishedVersion(repo) {
   const token = process.env.GITHUB_TOKEN;
-  const res = await fetch(`${GITHUB_API}/repos/${repo}/releases?per_page=1`, {
+  const res = await fetch(`${GITHUB_API}/repos/${repo}/releases?per_page=20`, {
     headers: {
       Accept: "application/vnd.github+json",
       "X-GitHub-Api-Version": "2022-11-28",
@@ -51,7 +51,9 @@ async function fetchLatestPublishedVersion(repo) {
     throw new Error(`No se pudo consultar releases de ${repo}: HTTP ${res.status}`);
   }
   const releases = await res.json();
-  return releases[0]?.tag_name ?? null;
+  // Solo cuentan los releases realmente publicados: un draft a medias (p. ej. de un intento
+  // de publicacion que fallo al subir los assets) no debe bloquear el reintento del mismo tag.
+  return releases.find((r) => !r.draft && !r.prerelease)?.tag_name ?? null;
 }
 
 async function main() {
