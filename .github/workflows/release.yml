@@ -13,24 +13,80 @@ name: Release
 # pubspec.yaml -- pubspec.yaml ya no es una fuente de verdad de version.
 on:
   push:
+    branches:
+      - master
+    paths:
+      - "lib/**"
+      - "android/**"
+      - "assets/**"
+      - "pubspec.yaml"
+      - "pubspec.lock"
+      - "windows/**"
     tags:
       - "v*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: release-${{ github.repository }}
+  cancel-in-progress: false
 
 permissions:
   contents: write
 
 jobs:
+  version:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.compute.outputs.tag }}
+      name: ${{ steps.compute.outputs.name }}
+      skip: ${{ steps.compute.outputs.skip }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Calcular tag y version del release
+        id: compute
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          if git log -1 --pretty=%B | grep -qF '[skip release]'; then
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            echo "Commit marcado con [skip release]: se omite el release."
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+
+          if [ "${{ github.ref_type }}" = "tag" ]; then
+            TAG="${{ github.ref_name }}"
+          else
+            LATEST=$(gh release view --repo "${{ github.repository }}" --json tagName -q .tagName 2>/dev/null || true)
+            if [ -z "$LATEST" ]; then
+              TAG="v1.0.0"
+            else
+              TAG=$(node -e "
+                const m = process.argv[1].replace(/^v/i, '').match(/^(\d+)\.(\d+)\.(\d+)/);
+                console.log('v' + m[1] + '.' + m[2] + '.' + (Number(m[3]) + 1));
+              " "$LATEST")
+            fi
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "name=${TAG#v}" >> "$GITHUB_OUTPUT"
+
   verify-version:
+    needs: version
+    if: needs.version.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: Verificar que el tag es superior al ultimo release publicado
-        run: node tools/verify-release-version.mjs --repo ${{ github.repository }} --new "${{ github.ref_name }}"
+        run: node tools/verify-release-version.mjs --repo ${{ github.repository }} --new "${{ needs.version.outputs.tag }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   build-android:
-    needs: verify-version
+    needs: [version, verify-version]
+    if: needs.version.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -43,10 +99,6 @@ jobs:
       - run: flutter pub get
 
       - run: flutter test
-
-      - name: Derivar version del tag
-        id: version
-        run: echo "name=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
 
       - name: Restaurar keystore de firma release
         env:
@@ -69,7 +121,7 @@ jobs:
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
         run: |
           flutter build apk --release \
-            --build-name=${{ steps.version.outputs.name }} \
+            --build-name=${{ needs.version.outputs.name }} \
             --build-number=${{ github.run_number }} \
             --dart-define=SUPABASE_URL=$SUPABASE_URL \
             --dart-define=SUPABASE_ANON_KEY=$SUPABASE_ANON_KEY
@@ -83,7 +135,8 @@ jobs:
           path: finanzas360-android.apk
 
   build-windows:
-    needs: verify-version
+    needs: [version, verify-version]
+    if: needs.version.outputs.skip != 'true'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -117,14 +170,16 @@ jobs:
           path: finanzas360-windows.zip
 
   release:
-    needs: [build-android, build-windows]
+    needs: [version, build-android, build-windows]
+    if: needs.version.outputs.skip != 'true'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}
+          tag_name: ${{ needs.version.outputs.tag }}
+          target_commitish: ${{ github.sha }}
           generate_release_notes: true
           files: |
             android-apk/finanzas360-android.apk
